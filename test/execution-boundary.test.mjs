@@ -1,0 +1,287 @@
+import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {createHash} from 'node:crypto';
+import {promises as fs} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+
+import {executeProofCommand} from '../src/index.js';
+
+const execFileAsync = promisify(execFile);
+
+test('reconstructs a dirty proof subject and returns an exit outcome', async () => {
+  const fixture = await createFixture({dirty: true});
+  const seen = [];
+  const result = await executeProofCommand(fixture.request, {
+    isolation: adapter(async (context) => {
+      seen.push(context);
+      assert.equal(await fs.readFile(path.join(context.snapshotPath, 'src/message.txt'), 'utf8'), 'dirty\n');
+      assert.equal(await fs.readFile(path.join(context.snapshotPath, 'notes/safe.txt'), 'utf8'), 'safe\n');
+      return {state: 'EXITED', exitCode: 0, signal: null, stdout: Buffer.from('pass\n'), stderr: Buffer.alloc(0)};
+    }),
+  });
+
+  assert.equal(result.kind, 'command-outcome');
+  assert.equal(result.execution.state, 'EXITED');
+  assert.equal(result.execution.exitCode, 0);
+  assert.equal(result.sourceIntegrity, 'UNCHANGED');
+  assert.equal(result.cleanup.state, 'CLEANED');
+  assert.equal(seen.length, 1);
+  assert.equal(await fs.readFile(path.join(fixture.root, 'src/message.txt'), 'utf8'), 'dirty\n');
+  assert.equal(await fs.readFile(path.join(fixture.root, 'notes/safe.txt'), 'utf8'), 'safe\n');
+  await remove(fixture.root);
+});
+
+test('masks credentials and private paths before persistence', async () => {
+  const fixture = await createFixture();
+  const result = await executeProofCommand(fixture.request, {
+    isolation: adapter(async (context) => ({
+      state: 'EXITED',
+      exitCode: 0,
+      signal: null,
+      stdout: Buffer.from(`token=top-secret path=${context.sourcePath}\n`),
+      stderr: Buffer.alloc(0),
+    })),
+  });
+
+  assert.equal(result.kind, 'command-outcome');
+  assert.equal(result.output.streams.stdout.excerpt.includes('top-secret'), false);
+  assert.equal(result.output.streams.stdout.excerpt.includes(fixture.root), false);
+  assert.match(result.output.streams.stdout.excerpt, /<redacted>/);
+  assert.deepEqual(result.warnings, [{code: 'VALUE_REDACTED', stream: 'stdout'}]);
+  await remove(fixture.root);
+});
+
+test('bounds text output while retaining both ends', async () => {
+  const fixture = await createFixture();
+  const result = await executeProofCommand(fixture.request, {
+    isolation: adapter(async () => ({
+      state: 'EXITED',
+      exitCode: 0,
+      signal: null,
+      stdout: Buffer.concat([Buffer.alloc(32768, 'a'), Buffer.alloc(32768, 'b'), Buffer.from('tail')]),
+      stderr: Buffer.alloc(0),
+    })),
+  });
+
+  const stream = result.output.streams.stdout;
+  assert.equal(stream.byteCount, 65540);
+  assert.equal(stream.truncated, true);
+  assert.equal(Buffer.byteLength(stream.excerpt) <= 4096, true);
+  assert.equal(stream.excerpt.startsWith('a'), true);
+  assert.equal(stream.excerpt.endsWith('tail'), true);
+  assert.match(stream.excerpt, /b+tail$/);
+  assert.deepEqual(result.warnings, [{code: 'OUTPUT_TRUNCATED', stream: 'stdout'}]);
+  await remove(fixture.root);
+});
+
+test('summarizes binary output without rendering it', async () => {
+  const fixture = await createFixture();
+  const bytes = Buffer.from([0, 1, 2, 3]);
+  const result = await executeProofCommand(fixture.request, {
+    isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null, stdout: bytes, stderr: Buffer.alloc(0)})),
+  });
+
+  assert.equal(result.output.streams.stdout.binary, true);
+  assert.equal(result.output.streams.stdout.excerpt, null);
+  assert.equal(result.output.streams.stdout.byteCount, bytes.length);
+  assert.equal(result.output.streams.stdout.sha256, createHash('sha256').update(bytes).digest('hex'));
+  assert.deepEqual(result.warnings, [{code: 'BINARY_OUTPUT_OMITTED', stream: 'stdout'}]);
+  await remove(fixture.root);
+});
+
+test('rejects install commands before isolation or process creation', async () => {
+  const fixture = await createFixture();
+  let executions = 0;
+  const command = {...fixture.request.command, executable: 'npm', args: ['install']};
+  const result = await executeProofCommand({...fixture.request, approvedCommand: command, command}, {
+    isolation: {
+      check: async () => ({available: true}),
+      execute: async () => {
+        executions += 1;
+        return {state: 'EXITED', exitCode: 0, signal: null};
+      },
+    },
+  });
+
+  assert.equal(result.kind, 'run-error');
+  assert.equal(result.code, 'INSTALL_COMMAND_REJECTED');
+  assert.equal(executions, 0);
+  await remove(fixture.root);
+});
+
+test('rejects a command changed after approval', async () => {
+  const fixture = await createFixture();
+  const result = await executeProofCommand({...fixture.request, command: {...fixture.request.command, args: ['-e', 'changed']}}, {
+    isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null})),
+  });
+
+  assert.equal(result.kind, 'run-error');
+  assert.equal(result.code, 'COMMAND_NOT_APPROVED');
+  await remove(fixture.root);
+});
+
+test('returns typed isolation and dependency failures', async () => {
+  const fixture = await createFixture();
+  const unavailable = await executeProofCommand(fixture.request, {
+    isolation: {
+      check: async () => ({available: false, reason: 'test capability unavailable'}),
+      execute: async () => ({state: 'EXITED', exitCode: 0, signal: null}),
+    },
+  });
+  assert.equal(unavailable.code, 'ISOLATION_UNAVAILABLE');
+
+  const dependencyRequest = {
+    ...fixture.request,
+    proofSubject: {
+      ...fixture.request.proofSubject,
+      dependencyTree: {sourcePath: path.join(fixture.root, 'missing-node-modules')},
+    },
+  };
+  const missing = await executeProofCommand(dependencyRequest, {
+    isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null})),
+  });
+  assert.equal(missing.code, 'DEPENDENCIES_UNAVAILABLE');
+  await remove(fixture.root);
+});
+
+test('returns timeout and signal outcomes distinctly', async () => {
+  const fixture = await createFixture();
+  const timeout = await executeProofCommand(fixture.request, {
+    isolation: adapter(async () => ({state: 'TIMED_OUT', exitCode: null, signal: 'SIGKILL'})),
+  });
+  assert.equal(timeout.execution.state, 'TIMED_OUT');
+  assert.equal(timeout.execution.exitCode, null);
+
+  const signal = await executeProofCommand(fixture.request, {
+    isolation: adapter(async () => ({state: 'SIGNALED', exitCode: null, signal: 'SIGTERM'})),
+  });
+  assert.equal(signal.execution.state, 'SIGNALED');
+  assert.equal(signal.execution.signal, 'SIGTERM');
+  await remove(fixture.root);
+});
+
+test('discards apparent command results when the source changes', async () => {
+  const fixture = await createFixture();
+  const result = await executeProofCommand(fixture.request, {
+    isolation: adapter(async (context) => {
+      await fs.writeFile(path.join(context.sourcePath, 'src/message.txt'), 'mutated\n');
+      return {state: 'EXITED', exitCode: 0, signal: null, stdout: Buffer.from('pass')};
+    }),
+  });
+
+  assert.equal(result.kind, 'run-error');
+  assert.equal(result.code, 'SOURCE_CHANGED');
+  assert.equal(result.proofSeal, null);
+  assert.equal(result.cleanup.state, 'CLEANED');
+  await remove(fixture.root);
+});
+
+test('fails closed on unsupported platforms', async () => {
+  const fixture = await createFixture();
+  let checked = false;
+  const result = await executeProofCommand(fixture.request, {
+    platform: 'darwin',
+    isolation: {
+      check: async () => {
+        checked = true;
+        return {available: true};
+      },
+      execute: async () => ({state: 'EXITED', exitCode: 0, signal: null}),
+    },
+  });
+
+  assert.equal(result.code, 'UNSUPPORTED_PLATFORM');
+  assert.equal(checked, false);
+  await remove(fixture.root);
+});
+
+test('runs the real Bubblewrap path when the host can provide it', async (t) => {
+  if (process.platform !== 'linux') t.skip('Linux is required.');
+  const fixture = await createFixture();
+  const command = {
+    executable: process.execPath,
+    args: ['-e', "import fs from 'node:fs'; import path from 'node:path'; let readOnly = false; try { fs.writeFileSync('src/message.txt', 'changed'); } catch { readOnly = true; } if (!readOnly) process.exit(2); fs.writeFileSync(path.join(process.env.PROVE_THE_TICKET_SCRATCH_DIR, 'result.txt'), 'ok'); process.stdout.write('isolated\\n');"],
+    cwd: '.',
+    timeoutSeconds: 2,
+  };
+  const result = await executeProofCommand({...fixture.request, approvedCommand: command, command});
+  if (result.code === 'ISOLATION_UNAVAILABLE') {
+    return t.skip('The host cannot establish Bubblewrap namespaces.');
+  }
+  assert.equal(result.kind, 'command-outcome');
+  assert.equal(result.execution.exitCode, 0);
+  assert.match(result.output.streams.stdout.excerpt, /isolated/);
+  await remove(fixture.root);
+});
+
+function adapter(execute) {
+  return {check: async () => ({available: true}), execute};
+}
+
+async function createFixture({dirty = false} = {}) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-test-'));
+  await fs.mkdir(path.join(root, 'src'), {recursive: true});
+  await fs.writeFile(path.join(root, 'src/message.txt'), 'clean\n');
+  await git(root, ['init', '-q']);
+  await git(root, ['config', 'user.name', 'Proof Fixture']);
+  await git(root, ['config', 'user.email', 'proof@example.invalid']);
+  await git(root, ['add', '.']);
+  await git(root, ['commit', '-qm', 'fixture']);
+
+  const commitSha = (await git(root, ['rev-parse', 'HEAD'])).trim();
+  const cleanContent = dirty ? 'dirty\n' : 'clean\n';
+  if (dirty) {
+    await fs.writeFile(path.join(root, 'src/message.txt'), cleanContent);
+    await fs.mkdir(path.join(root, 'notes'), {recursive: true});
+    await fs.writeFile(path.join(root, 'notes/safe.txt'), 'safe\n');
+  }
+  const trackedPatch = await gitBuffer(root, ['diff', '--binary', '--full-index', 'HEAD', '--']);
+  const trackedManifest = await manifestFor(root, ['src/message.txt']);
+  const untrackedFiles = dirty ? [{path: 'notes/safe.txt', mode: 0o644, content: 'safe\n'}] : [];
+  const manifest = dirty
+    ? [...trackedManifest, {path: 'notes/safe.txt', mode: 0o644, sha256: sha256(Buffer.from('safe\n'))}]
+    : trackedManifest;
+  const gitStatus = (await git(root, ['status', '--porcelain=v1', '--untracked-files=all']));
+  const command = {executable: process.execPath, args: ['-e', 'process.stdout.write("pass\\n")'], cwd: '.', timeoutSeconds: 2};
+  return {
+    root,
+    request: {
+      proofSubject: {sourcePath: root, commitSha, trackedPatch, manifest, untrackedFiles, gitStatus},
+      approvedCommand: command,
+      command,
+      redactionValues: ['top-secret'],
+    },
+  };
+}
+
+async function manifestFor(root, paths) {
+  return Promise.all(paths.map(async (relative) => {
+    const stat = await fs.stat(path.join(root, relative));
+    return {path: relative, mode: stat.mode & 0o777, sha256: await sha256File(path.join(root, relative))};
+  }));
+}
+
+async function git(root, args) {
+  const result = await execFileAsync('git', ['-C', root, ...args], {encoding: 'utf8'});
+  return result.stdout;
+}
+
+async function gitBuffer(root, args) {
+  const result = await execFileAsync('git', ['-C', root, ...args], {encoding: 'buffer'});
+  return result.stdout;
+}
+
+async function sha256File(filePath) {
+  return sha256(await fs.readFile(filePath));
+}
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+async function remove(root) {
+  await fs.rm(root, {recursive: true, force: true});
+}

@@ -1,0 +1,13 @@
+{
+  "name": "prove-the-ticket",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "check": "node --check src/index.js && node --check src/execution-boundary.js && node --check test/execution-boundary.test.mjs",
+    "test": "node --test"
+  }
+}
