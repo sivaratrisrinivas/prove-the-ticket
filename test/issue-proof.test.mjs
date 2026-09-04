@@ -103,6 +103,9 @@ test('rejects invalid URLs, pull requests, unavailable issues, mismatched remote
     const pullRequest = await runIssueProof({issueUrl: 'https://github.com/owner/repository/pull/3', checkoutPath: fixture.root});
     assert.equal(pullRequest.code, 'INVALID_ISSUE_URL');
 
+    const unsafeNumber = await runIssueProof({issueUrl: 'https://github.com/owner/repository/issues/9007199254740992', checkoutPath: fixture.root});
+    assert.equal(unsafeNumber.code, 'INVALID_ISSUE_URL');
+
     const unavailable = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
       github: {readIssue: async () => null},
     });
@@ -117,6 +120,24 @@ test('rejects invalid URLs, pull requests, unavailable issues, mismatched remote
       github: {readIssue: async () => ({title: 'No criteria', body: '# Notes\n- [ ] no\n'})},
     });
     assert.equal(noCriteria.code, 'EXPLICIT_CRITERIA_REQUIRED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rejects a remote whose fetch and push URLs disagree', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
+      github: {readIssue: async () => issue()},
+      checkout: {
+        readRemotes: async () => [
+          {name: 'origin', kind: 'fetch', url: 'https://github.com/owner/repository.git'},
+          {name: 'origin', kind: 'push', url: 'https://github.com/other/repository.git'},
+        ],
+      },
+    });
+    assert.equal(result.code, 'REPOSITORY_MISMATCH');
   } finally {
     await remove(fixture.root);
   }

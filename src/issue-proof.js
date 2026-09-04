@@ -197,15 +197,15 @@ function parseIssueUrl(value) {
     throw new ProofError('INVALID_ISSUE_URL', 'The issue URL is invalid.');
   }
   const segments = parsed.pathname.split('/');
-  if (parsed.protocol !== 'https:' || !['github.com', 'www.github.com'].includes(parsed.hostname.toLowerCase()) || parsed.search || parsed.hash || (segments.length !== 5 && segments.length !== 6) || segments[0] !== '' || segments[3].toLowerCase() !== 'issues' || !/^\d+$/.test(segments[4]) || (segments.length === 6 && segments[5] !== '')) {
+  if (parsed.protocol !== 'https:' || !['github.com', 'www.github.com'].includes(parsed.hostname.toLowerCase()) || parsed.username || parsed.password || parsed.port || parsed.search || parsed.hash || (segments.length !== 5 && segments.length !== 6) || segments[0] !== '' || segments[3].toLowerCase() !== 'issues' || !/^\d+$/.test(segments[4]) || (segments.length === 6 && segments[5] !== '')) {
     throw new ProofError('INVALID_ISSUE_URL', 'The URL must identify a GitHub issue, not a pull request or another resource.');
   }
   const owner = normalizeRepositoryPart(segments[1]);
   const repository = normalizeRepositoryPart(segments[2].replace(/\.git$/i, ''));
-  if (!owner || !repository || Number(segments[4]) < 1) {
+  const number = Number(segments[4]);
+  if (!owner || !repository || !Number.isSafeInteger(number) || number < 1) {
     throw new ProofError('INVALID_ISSUE_URL', 'The URL must identify a GitHub issue, not a pull request or another resource.');
   }
-  const number = Number(segments[4]);
   return {
     tracker: 'github',
     owner,
@@ -232,14 +232,19 @@ function normalizeIssue(issue, ticket) {
 
 function requireMatchingRemote(records, ticket) {
   if (!Array.isArray(records)) throw new ProofError('REPOSITORY_MISMATCH', 'The local checkout remotes could not be inspected.');
-  const unique = new Map();
+  const remotes = new Map();
   for (const record of records) {
     const identity = normalizeRemoteIdentity(typeof record === 'string' ? record : record?.url);
     if (!identity) continue;
     const key = typeof record === 'string' ? record : record?.name || record?.url;
-    if (key && !unique.has(key)) unique.set(key, identity);
+    if (!key) continue;
+    if (!remotes.has(key)) remotes.set(key, new Map());
+    remotes.get(key).set(`${identity.owner}/${identity.repository}`, identity);
   }
-  const matches = [...unique.values()].filter((identity) => identity.owner === ticket.owner && identity.repository === ticket.repository);
+  const matches = [...remotes.values()]
+    .filter((identities) => identities.size === 1)
+    .flatMap((identities) => [...identities.values()])
+    .filter((identity) => identity.owner === ticket.owner && identity.repository === ticket.repository);
   if (matches.length !== 1) {
     throw new ProofError('REPOSITORY_MISMATCH', 'The issue repository does not match one unambiguous local GitHub remote.');
   }
@@ -253,12 +258,14 @@ function normalizeRemoteIdentity(value) {
   if (ssh) {
     owner = ssh[1];
     repository = ssh[2];
-  } else if (/^ssh:\/\//i.test(value)) {
+  } else if (/^(?:ssh|git\+ssh):\/\//i.test(value)) {
     try {
       const parsed = new URL(value);
-      if (parsed.hostname.toLowerCase() !== 'github.com') return null;
-      owner = parsed.pathname.split('/')[1];
-      repository = parsed.pathname.split('/')[2];
+      if (parsed.hostname.toLowerCase() !== 'github.com' || parsed.search || parsed.hash) return null;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (parts.length !== 2) return null;
+      owner = parts[0];
+      repository = parts[1];
     } catch {
       return null;
     }
