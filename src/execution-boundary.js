@@ -109,16 +109,21 @@ export async function executeProofCommand(request, options = {}) {
     await ensureDirectory(internalCwd);
     const environment = buildEnvironment(command, workspace.scratchPath);
     const startedAt = runtime.now();
-    const processOutcome = await runtime.isolation.execute({
-      snapshotPath: workspace.snapshotPath,
-      scratchPath: workspace.scratchPath,
-      dependencyTree,
-      command,
-      internalCwd,
-      environment,
-      sourcePath: request.proofSubject.sourcePath,
-    });
-    validateProcessOutcome(processOutcome);
+    let processOutcome;
+    let processError = null;
+    try {
+      processOutcome = await runtime.isolation.execute({
+        snapshotPath: workspace.snapshotPath,
+        scratchPath: workspace.scratchPath,
+        dependencyTree,
+        command,
+        internalCwd,
+        environment,
+        sourcePath: request.proofSubject.sourcePath,
+      });
+    } catch (error) {
+      processError = error;
+    }
     const endedAt = runtime.now();
 
     let after;
@@ -136,10 +141,13 @@ export async function executeProofCommand(request, options = {}) {
         'The source checkout or dependency tree changed during execution.',
       );
     }
+    if (processError) throw processError;
+    validateProcessOutcome(processOutcome);
 
     const output = formatProcessOutput(processOutcome, request, workspace);
     outcome = {
       kind: 'command-outcome',
+      ...(processOutcome.state === 'TIMED_OUT' ? {code: 'COMMAND_TIMEOUT'} : {}),
       command: publicCommand(command, workspace),
       execution: {
         state: processOutcome.state,

@@ -34,6 +34,27 @@ test('reconstructs a dirty proof subject and returns an exit outcome', async () 
   await remove(fixture.root);
 });
 
+test('reconstructs the same fingerprint to a stable snapshot hash', async () => {
+  const fixture = await createFixture({dirty: true});
+  const snapshotHashes = [];
+  try {
+    for (let run = 0; run < 2; run += 1) {
+      const result = await executeProofCommand(fixture.request, {
+        isolation: adapter(async (context) => {
+          snapshotHashes.push(await snapshotHash(context.snapshotPath));
+          return {state: 'EXITED', exitCode: 0, signal: null};
+        }),
+      });
+      assert.equal(result.kind, 'command-outcome');
+      assert.equal(result.execution.exitCode, 0);
+    }
+    assert.equal(snapshotHashes.length, 2);
+    assert.equal(snapshotHashes[0], snapshotHashes[1]);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('masks credentials and private paths before persistence', async () => {
   const fixture = await createFixture();
   const result = await executeProofCommand(fixture.request, {
@@ -153,6 +174,7 @@ test('returns timeout and signal outcomes distinctly', async () => {
     isolation: adapter(async () => ({state: 'TIMED_OUT', exitCode: null, signal: 'SIGKILL'})),
   });
   assert.equal(timeout.execution.state, 'TIMED_OUT');
+  assert.equal(timeout.code, 'COMMAND_TIMEOUT');
   assert.equal(timeout.execution.exitCode, null);
 
   const signal = await executeProofCommand(fixture.request, {
@@ -179,6 +201,25 @@ test('discards apparent command results when the source changes', async () => {
   await remove(fixture.root);
 });
 
+test('checks source integrity when isolation fails internally', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await executeProofCommand(fixture.request, {
+      isolation: adapter(async (context) => {
+        await fs.writeFile(path.join(context.sourcePath, 'src/message.txt'), 'mutated\n');
+        throw new Error('adapter failed');
+      }),
+    });
+
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'SOURCE_CHANGED');
+    assert.equal(result.proofSeal, null);
+    assert.equal(result.cleanup.state, 'CLEANED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('fails closed on unsupported platforms', async () => {
   const fixture = await createFixture();
   let checked = false;
@@ -201,24 +242,92 @@ test('fails closed on unsupported platforms', async () => {
 test('runs the real Bubblewrap path when the host can provide it', async (t) => {
   if (process.platform !== 'linux') t.skip('Linux is required.');
   const fixture = await createFixture();
+  const dependencyRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-dependency-'));
+  await fs.writeFile(path.join(dependencyRoot, 'package.json'), '{"name":"fixture-dependency"}\n');
   const command = {
     executable: process.execPath,
-    args: ['-e', "import fs from 'node:fs'; import path from 'node:path'; let readOnly = false; try { fs.writeFileSync('src/message.txt', 'changed'); } catch { readOnly = true; } if (!readOnly) process.exit(2); fs.writeFileSync(path.join(process.env.PROVE_THE_TICKET_SCRATCH_DIR, 'result.txt'), 'ok'); process.stdout.write('isolated\\n');"],
+    args: ['-e', "(async () => { const fs = require('node:fs'); const net = require('node:net'); const crypto = require('node:crypto'); let sourceReadOnly = false; try { fs.writeFileSync('src/message.txt', 'changed'); } catch { sourceReadOnly = true; } const dependency = fs.readFileSync('node_modules/package.json', 'utf8'); let dependencyReadOnly = false; try { fs.writeFileSync('node_modules/package.json', 'changed'); } catch { dependencyReadOnly = true; } const networkBlocked = await new Promise((resolve) => { const socket = net.createConnection({host: '198.51.100.1', port: 80}); const finish = (blocked) => { socket.destroy(); resolve(blocked); }; socket.once('connect', () => finish(false)); socket.once('error', () => finish(true)); socket.setTimeout(250, () => finish(true)); }); if (!sourceReadOnly || !dependencyReadOnly || dependency !== '{\"name\":\"fixture-dependency\"}\\n' || !networkBlocked) process.exit(2); fs.writeFileSync(require('node:path').join(process.env.PROVE_THE_TICKET_SCRATCH_DIR, 'result.txt'), 'ok'); process.stdout.write(crypto.createHash('sha256').update(dependency).digest('hex') + '\\n'); })().catch((error) => { console.error(error); process.exit(1); });"],
     cwd: '.',
-    timeoutSeconds: 2,
+    timeoutSeconds: 3,
   };
-  const result = await executeProofCommand({...fixture.request, approvedCommand: command, command});
-  if (result.code === 'ISOLATION_UNAVAILABLE') {
-    return t.skip('The host cannot establish Bubblewrap namespaces.');
+  const request = {
+    ...fixture.request,
+    proofSubject: {
+      ...fixture.request.proofSubject,
+      dependencyTree: {
+        sourcePath: dependencyRoot,
+        requiredPaths: ['package.json'],
+      },
+    },
+    approvedCommand: command,
+    command,
+  };
+  try {
+    const results = [];
+    for (let run = 0; run < 2; run += 1) {
+      const result = await executeProofCommand(request);
+      if (result.code === 'ISOLATION_UNAVAILABLE') {
+        return t.skip('The host cannot establish Bubblewrap namespaces.');
+      }
+      results.push(result);
+    }
+    for (const result of results) {
+      assert.equal(result.kind, 'command-outcome');
+      assert.equal(result.execution.exitCode, 0);
+      assert.match(result.output.streams.stdout.excerpt, /^[0-9a-f]{64}\n$/);
+    }
+    assert.equal(results[0].output.streams.stdout.excerpt, results[1].output.streams.stdout.excerpt);
+    assert.equal(await fs.readFile(path.join(dependencyRoot, 'package.json'), 'utf8'), '{"name":"fixture-dependency"}\n');
+  } finally {
+    await remove(fixture.root);
+    await remove(dependencyRoot);
   }
-  assert.equal(result.kind, 'command-outcome');
-  assert.equal(result.execution.exitCode, 0);
-  assert.match(result.output.streams.stdout.excerpt, /isolated/);
-  await remove(fixture.root);
+});
+
+test('returns COMMAND_TIMEOUT for a real isolated process tree timeout', async (t) => {
+  if (process.platform !== 'linux') t.skip('Linux is required.');
+  const fixture = await createFixture();
+  const command = {
+    executable: process.execPath,
+    args: ['-e', "const {spawn} = require('node:child_process'); spawn(process.execPath, ['-e', 'setTimeout(() => {}, 10000)'], {stdio: 'ignore'}); setTimeout(() => {}, 10000);"],
+    cwd: '.',
+    timeoutSeconds: 1,
+  };
+  try {
+    const result = await executeProofCommand({...fixture.request, approvedCommand: command, command});
+    if (result.code === 'ISOLATION_UNAVAILABLE') {
+      return t.skip('The host cannot establish Bubblewrap namespaces.');
+    }
+    assert.equal(result.kind, 'command-outcome');
+    assert.equal(result.code, 'COMMAND_TIMEOUT');
+    assert.equal(result.execution.state, 'TIMED_OUT');
+    assert.equal(result.execution.exitCode, null);
+    assert.equal(result.sourceIntegrity, 'UNCHANGED');
+  } finally {
+    await remove(fixture.root);
+  }
 });
 
 function adapter(execute) {
   return {check: async () => ({available: true}), execute};
+}
+
+async function snapshotHash(root) {
+  const entries = [];
+  async function visit(current, relative) {
+    for (const name of (await fs.readdir(current)).sort()) {
+      const next = path.join(current, name);
+      const nextRelative = relative ? `${relative}/${name}` : name;
+      const stat = await fs.stat(next);
+      if (stat.isDirectory()) {
+        await visit(next, nextRelative);
+      } else {
+        entries.push({path: nextRelative, mode: stat.mode & 0o777, sha256: await sha256File(next)});
+      }
+    }
+  }
+  await visit(root, '');
+  return sha256(JSON.stringify(entries));
 }
 
 async function createFixture({dirty = false} = {}) {

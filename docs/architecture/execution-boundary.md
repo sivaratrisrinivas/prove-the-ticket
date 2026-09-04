@@ -18,6 +18,7 @@ The subject contains the private local checkout path, commit, tracked patch byte
 The caller receives one of two result shapes.
 
 - `command-outcome` records an exit code, a signal, or a timeout, bounded diagnostic output, source integrity, network policy, warnings, and cleanup.
+- A timed-out `command-outcome` also carries `code: COMMAND_TIMEOUT`.
 - `run-error` records a fixed error code and no overall proof status or seal.
 
 The executor hides temporary paths, archive extraction, process containment, output handling, and cleanup from callers.
