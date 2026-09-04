@@ -7,7 +7,7 @@
     ".": "./src/index.js"
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/execution-boundary.js && node --check test/execution-boundary.test.mjs",
+    "check": "node --check src/index.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs",
     "test": "node --test"
   }
 }
