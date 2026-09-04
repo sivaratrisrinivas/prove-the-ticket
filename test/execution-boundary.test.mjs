@@ -55,6 +55,26 @@ test('reconstructs the same fingerprint to a stable snapshot hash', async () => 
   }
 });
 
+test('reconstructs a binary tracked patch', async () => {
+  const fixture = await createFixture({binary: true});
+  try {
+    const result = await executeProofCommand(fixture.request, {
+      isolation: adapter(async (context) => {
+        assert.deepEqual(
+          await fs.readFile(path.join(context.snapshotPath, 'src/blob.bin')),
+          Buffer.from([0, 255, 1, 254, 2]),
+        );
+        return {state: 'EXITED', exitCode: 0, signal: null};
+      }),
+    });
+
+    assert.equal(result.kind, 'command-outcome');
+    assert.equal(result.execution.exitCode, 0);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('masks credentials and private paths before persistence', async () => {
   const fixture = await createFixture();
   const result = await executeProofCommand(fixture.request, {
@@ -330,10 +350,11 @@ async function snapshotHash(root) {
   return sha256(JSON.stringify(entries));
 }
 
-async function createFixture({dirty = false} = {}) {
+async function createFixture({dirty = false, binary = false} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-test-'));
   await fs.mkdir(path.join(root, 'src'), {recursive: true});
   await fs.writeFile(path.join(root, 'src/message.txt'), 'clean\n');
+  if (binary) await fs.writeFile(path.join(root, 'src/blob.bin'), Buffer.from([0, 1, 2, 3]));
   await git(root, ['init', '-q']);
   await git(root, ['config', 'user.name', 'Proof Fixture']);
   await git(root, ['config', 'user.email', 'proof@example.invalid']);
@@ -348,17 +369,19 @@ async function createFixture({dirty = false} = {}) {
     await fs.writeFile(path.join(root, 'notes/safe.txt'), 'safe\n');
   }
   const trackedPatch = await gitBuffer(root, ['diff', '--binary', '--full-index', 'HEAD', '--']);
-  const trackedManifest = await manifestFor(root, ['src/message.txt']);
+  if (binary) await fs.writeFile(path.join(root, 'src/blob.bin'), Buffer.from([0, 255, 1, 254, 2]));
+  const finalTrackedPatch = await gitBuffer(root, ['diff', '--binary', '--full-index', 'HEAD', '--']);
+  const finalTrackedManifest = await manifestFor(root, ['src/message.txt', ...(binary ? ['src/blob.bin'] : [])]);
   const untrackedFiles = dirty ? [{path: 'notes/safe.txt', mode: 0o644, content: 'safe\n'}] : [];
   const manifest = dirty
-    ? [...trackedManifest, {path: 'notes/safe.txt', mode: 0o644, sha256: sha256(Buffer.from('safe\n'))}]
-    : trackedManifest;
+    ? [...finalTrackedManifest, {path: 'notes/safe.txt', mode: 0o644, sha256: sha256(Buffer.from('safe\n'))}]
+    : finalTrackedManifest;
   const gitStatus = (await git(root, ['status', '--porcelain=v1', '--untracked-files=all']));
   const command = {executable: process.execPath, args: ['-e', 'process.stdout.write("pass\\n")'], cwd: '.', timeoutSeconds: 2};
   return {
     root,
     request: {
-      proofSubject: {sourcePath: root, commitSha, trackedPatch, manifest, untrackedFiles, gitStatus},
+      proofSubject: {sourcePath: root, commitSha, trackedPatch: binary ? finalTrackedPatch : trackedPatch, manifest, untrackedFiles, gitStatus},
       approvedCommand: command,
       command,
       redactionValues: ['top-secret'],
