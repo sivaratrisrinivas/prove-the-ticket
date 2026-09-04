@@ -33,11 +33,10 @@ const POLICY_ERROR_CODES = new Set([
  * @typedef {{sourcePath: string, commitSha: string, trackedPatch: Uint8Array, manifest: ManifestEntry[], untrackedFiles: UntrackedFile[], dependencyTree?: DependencyTree, gitStatus: string}} ExecutorProofSubject
  * @typedef {{executable: string, args: string[], cwd: string, timeoutSeconds: number, environmentPolicy: {variables: Record<string, string>, inherit: string[]}}} ApprovedCommand
  * @typedef {{issueUrl: string, checkoutPath: string, command?: object, lockfilePath?: string}} IssueProofInput
- * @typedef {{now?: () => number, github?: object, decisions?: object, checkout?: object, execution?: object|Function, boundaryOptions?: object, environment?: object|(() => object), redactionValues?: string[], gitBinary?: string}} IssueProofOptions
+ * @typedef {{now?: () => number, github?: object, decisions?: object, checkout?: object, boundaryOptions?: object, environment?: object|(() => object), redactionValues?: string[], gitBinary?: string}} IssueProofOptions
  */
 
 class ProofError extends Error {
-  /** @param {string} code @param {string} message @param {Record<string, unknown>} [details] */
   constructor(code, message, details = {}) {
     super(message);
     this.name = 'ProofError';
@@ -123,9 +122,7 @@ function createRuntime(options) {
   const checkout = options.checkout || createCheckoutAdapter(options.gitBinary || 'git');
   const decisions = options.decisions || {};
   const github = options.github || createGithubAdapter();
-  const execution = options.execution
-    ? typeof options.execution === 'function' ? {execute: options.execution} : options.execution
-    : createExecutionBoundary(options.boundaryOptions || {});
+  const execution = createExecutionBoundary(options.boundaryOptions || {});
   return {
     now: options.now || (() => Date.now()),
     github,
@@ -189,9 +186,6 @@ function validateInput(input) {
   }
   if (input.command !== undefined && (!input.command || typeof input.command !== 'object')) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command is invalid.');
-  }
-  if (input.commands !== undefined && (!Array.isArray(input.commands) || input.commands.some((command) => !command || typeof command !== 'object'))) {
-    throw new ProofError('COMMAND_NOT_APPROVED', 'The verification commands are invalid.');
   }
 }
 
@@ -351,12 +345,6 @@ async function approvePlan(decisions, plan) {
 
 async function selectCommand(input, checkoutPath, checkout) {
   if (input.command) return normalizeCommand(input.command);
-  if (input.commands) {
-    if (!Array.isArray(input.commands) || input.commands.length !== 1) {
-      throw new ProofError('SINGLE_COMMAND_REQUIRED', 'Version one accepts exactly one independent verification command.');
-    }
-    return normalizeCommand(input.commands[0]);
-  }
   if (typeof checkout.discoverCommand === 'function') return normalizeCommand(await checkout.discoverCommand(checkoutPath));
   const packageJson = await readPackageJson(checkoutPath);
   const scripts = packageJson.scripts && typeof packageJson.scripts === 'object' ? packageJson.scripts : {};
@@ -627,7 +615,7 @@ function assembleProofResult(context) {
       commandId: commandRecord.id,
       ...(execution.outcome ? {execution: commandRecord.execution, ...(commandRecord.output ? {output: commandRecord.output} : {})} : {error: commandRecord.error}),
     }],
-    rationale: rationaleFor(criterionStatus, execution),
+    rationale: execution.rationale,
   };
   const warnings = collectWarnings(execution.outcome?.warnings || []);
   const overallStatus = criterionStatus === 'PROVED' ? 'PROVED' : criterionStatus === 'FAILED' ? 'FAILED' : 'INCOMPLETE';
@@ -701,13 +689,13 @@ function assembleProofResult(context) {
 function classifyExecution(result) {
   if (!result || typeof result !== 'object') return {kind: 'pre-result-error', code: 'INTERNAL_EXECUTION_ERROR', message: 'The execution boundary returned no result.'};
   if (result.kind === 'command-outcome') {
-    if (result.execution?.state === 'EXITED' && result.execution.exitCode === 0) return {status: 'PROVED', outcome: result};
-    if (result.execution?.state === 'EXITED' || result.execution?.state === 'SIGNALED') return {status: 'FAILED', outcome: result};
-    if (result.execution?.state === 'TIMED_OUT' || result.code === 'COMMAND_TIMEOUT') return {status: 'UNVERIFIED', outcome: result};
+    if (result.execution?.state === 'EXITED' && result.execution.exitCode === 0) return {status: 'PROVED', outcome: result, rationale: 'The approved command exited zero in the isolated execution boundary.'};
+    if (result.execution?.state === 'EXITED' || result.execution?.state === 'SIGNALED') return {status: 'FAILED', outcome: result, rationale: 'The approved command completed with a nonzero exit or terminating signal.'};
+    if (result.execution?.state === 'TIMED_OUT' || result.code === 'COMMAND_TIMEOUT') return {status: 'UNVERIFIED', outcome: result, rationale: 'The approved command timed out or had no trustworthy outcome.'};
     return {kind: 'pre-result-error', code: 'INTERNAL_EXECUTION_ERROR', message: 'The execution boundary returned an invalid command outcome.'};
   }
   if (result.kind === 'run-error' && POLICY_ERROR_CODES.has(result.code)) {
-    return {status: 'UNVERIFIED', error: {code: result.code, message: result.message || result.code}};
+    return {status: 'UNVERIFIED', error: {code: result.code, message: result.message || result.code}, rationale: `The approved command had no trustworthy outcome because ${result.code}.`};
   }
   return {
     kind: 'pre-result-error',
@@ -715,12 +703,6 @@ function classifyExecution(result) {
     message: result.message || 'The execution boundary could not produce trustworthy evidence.',
     details: result.details,
   };
-}
-
-function rationaleFor(status, execution) {
-  if (status === 'PROVED') return 'The approved command exited zero in the isolated execution boundary.';
-  if (status === 'FAILED') return 'The approved command completed with a nonzero exit or terminating signal.';
-  return execution.error ? `The approved command had no trustworthy outcome because ${execution.error.code}.` : 'The approved command timed out or had no trustworthy outcome.';
 }
 
 function collectWarnings(warnings) {
@@ -899,8 +881,6 @@ function limitText(text, maxBytes) {
 function compareStrings(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
-
-export const proveTicket = runIssueProof;
 
 /** @param {IssueProofOptions} [options] */
 export function createIssueProofPlay(options = {}) {

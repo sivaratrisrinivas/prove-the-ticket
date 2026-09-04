@@ -34,29 +34,13 @@ test('runs one confirmed public issue through a clean checkout to a proof card',
           return true;
         },
       },
-      execution: {
-        async execute(request) {
-          calls.execution.push(request);
-          return {
-            kind: 'command-outcome',
-            execution: {
-              state: 'EXITED',
-              exitCode: 0,
-              signal: null,
-              startedAt: '2026-09-05T00:00:00.000Z',
-              endedAt: '2026-09-05T00:00:00.010Z',
-              durationMs: 10,
-              networkPolicy: 'DENIED',
-            },
-            output: {
-              streams: {
-                stdout: {binary: false, byteCount: 5, excerpt: 'pass\n', truncated: false},
-                stderr: {binary: false, byteCount: 0, excerpt: '', truncated: false},
-              },
-            },
-            warnings: [],
-            cleanup: {state: 'CLEANED'},
-          };
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          async execute(context) {
+            calls.execution.push(context);
+            return {state: 'EXITED', exitCode: 0, signal: null, stdout: Buffer.from('pass\n'), stderr: Buffer.alloc(0)};
+          },
         },
       },
       environment: environment(),
@@ -71,7 +55,7 @@ test('runs one confirmed public issue through a clean checkout to a proof card',
     assert.equal(calls.plans[0].commands[0].command.executable, 'npm');
     assert.deepEqual(calls.plans[0].commands[0].command.args, ['run', 'test']);
     assert.equal(calls.execution.length, 1);
-    assert.equal(calls.execution[0].proofSubject.sourcePath, fixture.root);
+    assert.equal(calls.execution[0].sourcePath, fixture.root);
     assert.equal(result.kind, 'proof-run');
     assert.equal(result.ticket.url, 'https://github.com/owner/repository/issues/3');
     assert.equal(result.ticket.criteria[0].checked, true);
@@ -145,14 +129,14 @@ test('requires both explicit human confirmations before execution', async () => 
     const criteriaRejected = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
       github: {readIssue: async () => issue()},
       decisions: {confirmCriteria: async () => false, approvePlan: async () => true},
-      execution: {execute: async () => { executions += 1; return successfulOutcome(); }},
+      boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => { executions += 1; return processOutcome(); }}},
     });
     assert.equal(criteriaRejected.code, 'CRITERIA_NOT_CONFIRMED');
 
     const planRejected = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
       github: {readIssue: async () => issue()},
       decisions: {confirmCriteria: async () => true, approvePlan: async () => false},
-      execution: {execute: async () => { executions += 1; return successfulOutcome(); }},
+      boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => { executions += 1; return processOutcome(); }}},
     });
     assert.equal(planRejected.code, 'PLAN_NOT_APPROVED');
     assert.equal(executions, 0);
@@ -166,23 +150,30 @@ test('maps command, timeout, dependency, and policy outcomes to criterion and ov
     ['nonzero', {state: 'EXITED', exitCode: 2, signal: null}, 'FAILED', 'FAILED'],
     ['signal', {state: 'SIGNALED', exitCode: null, signal: 'SIGTERM'}, 'FAILED', 'FAILED'],
     ['timeout', {state: 'TIMED_OUT', exitCode: null, signal: 'SIGKILL'}, 'UNVERIFIED', 'INCOMPLETE'],
-    ['dependencies', {kind: 'run-error', code: 'DEPENDENCIES_UNAVAILABLE', message: 'missing'}, 'UNVERIFIED', 'INCOMPLETE'],
-    ['policy', {kind: 'run-error', code: 'INSTALL_COMMAND_REJECTED', message: 'blocked'}, 'UNVERIFIED', 'INCOMPLETE'],
+    ['dependencies', null, 'UNVERIFIED', 'INCOMPLETE'],
+    ['policy', null, 'UNVERIFIED', 'INCOMPLETE'],
   ];
-  const fixture = await createFixture();
-  try {
-    for (const [name, outcome, criterionStatus, overallStatus] of cases) {
-      const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
+  for (const [name, outcome, criterionStatus, overallStatus] of cases) {
+    const fixture = await createFixture({dependencies: name === 'dependencies'});
+    try {
+      const input = {issueUrl: issueUrl(), checkoutPath: fixture.root};
+      if (name === 'policy') input.command = {executable: 'npm', args: ['install']};
+      const result = await runIssueProof(input, {
         ...successfulOptions(),
-        execution: {execute: async () => ({kind: outcome.kind || 'command-outcome', ...(outcome.kind ? {code: outcome.code, message: outcome.message} : {execution: {...outcome}, warnings: [], cleanup: {state: 'CLEANED'}})})},
+        boundaryOptions: {
+          isolation: {
+            check: async () => ({available: true}),
+            execute: async () => outcome || processOutcome(),
+          },
+        },
       });
       assert.equal(result.kind, 'proof-run', `${name}: ${result.code || result.message}`);
       assert.equal(result.criterionResults[0].status, criterionStatus, name);
       assert.equal(result.overallStatus, overallStatus, name);
       assert.match(result.proofSeal, /^sha256-v1:/, name);
+    } finally {
+      await remove(fixture.root);
     }
-  } finally {
-    await remove(fixture.root);
   }
 });
 
@@ -191,7 +182,7 @@ test('returns no status or seal for a pre-result execution error', async () => {
   try {
     const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
       ...successfulOptions(),
-      execution: {execute: async () => ({kind: 'run-error', code: 'ISOLATION_UNAVAILABLE', message: 'Bubblewrap unavailable'})},
+      boundaryOptions: {isolation: {check: async () => ({available: false, reason: 'Bubblewrap unavailable'}), execute: async () => processOutcome()}},
     });
     assert.equal(result.kind, 'run-error');
     assert.equal(result.code, 'ISOLATION_UNAVAILABLE');
@@ -234,13 +225,13 @@ test('keeps seals stable across presentation changes and excludes private output
       ...successfulOptions(),
       redactionValues: ['top-secret'],
       now: sequenceClock(1000, 2000),
-      execution: {execute: async () => outcomeWithOutput(`${fixture.root} top-secret first\n`)},
+      boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => outcomeWithOutput(`${fixture.root} top-secret first\n`)}},
     });
     const second = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, {
       ...successfulOptions(),
       redactionValues: ['top-secret'],
       now: sequenceClock(5000, 9000),
-      execution: {execute: async () => outcomeWithOutput(`${fixture.root} top-secret second\n`)},
+      boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => outcomeWithOutput(`${fixture.root} top-secret second\n`)}},
     });
 
     assert.equal(first.proofSeal, second.proofSeal);
@@ -297,7 +288,7 @@ function successfulOptions(overrides = {}) {
   return {
     github: {readIssue: async () => issue()},
     decisions: {confirmCriteria: async () => true, approvePlan: async () => true},
-    execution: {execute: async () => successfulOutcome()},
+    boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => processOutcome()}},
     environment: environment(),
     now: sequenceClock(),
     ...overrides,
@@ -327,26 +318,20 @@ function sequenceClock(start = 1000, end = 1010) {
   return () => values.shift() ?? end;
 }
 
-function successfulOutcome() {
-  return {
-    kind: 'command-outcome',
-    execution: {state: 'EXITED', exitCode: 0, signal: null, networkPolicy: 'DENIED'},
-    output: {streams: {stdout: {excerpt: 'pass\n'}, stderr: {excerpt: ''}}},
-    warnings: [],
-    cleanup: {state: 'CLEANED'},
-  };
+function processOutcome() {
+  return {state: 'EXITED', exitCode: 0, signal: null, stdout: Buffer.from('pass\n'), stderr: Buffer.alloc(0)};
 }
 
 function outcomeWithOutput(output) {
-  return {
-    ...successfulOutcome(),
-    output: {streams: {stdout: {binary: false, byteCount: output.length, excerpt: output, truncated: false}, stderr: {excerpt: ''}}},
-  };
+  return {...processOutcome(), stdout: Buffer.from(output)};
 }
 
-async function createFixture({remote = 'https://github.com/Owner/Repository.git'} = {}) {
+async function createFixture({remote = 'https://github.com/Owner/Repository.git', dependencies = false} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-issue-proof-'));
-  await fs.writeFile(path.join(root, 'package.json'), '{"name":"fixture","scripts":{"test":"node --version"}}\n');
+  const packageJson = dependencies
+    ? '{"name":"fixture","scripts":{"test":"node --version"},"dependencies":{"missing-package":"1.0.0"}}\n'
+    : '{"name":"fixture","scripts":{"test":"node --version"}}\n';
+  await fs.writeFile(path.join(root, 'package.json'), packageJson);
   await fs.writeFile(path.join(root, 'source.js'), 'export const value = 1;\n');
   await git(root, ['init', '-q']);
   await git(root, ['config', 'user.name', 'Proof Fixture']);

@@ -3,9 +3,10 @@
 Issue #3 adds one public operation, `runIssueProof`, around the execution
 boundary from issue #2. The caller supplies a full GitHub issue URL and a local
 checkout, then supplies or accepts one existing Node verification command.
-Injected GitHub, decision, checkout, environment, and execution adapters keep
-the complete path deterministic in tests. The default execution adapter is the
-existing `executeProofCommand` operation.
+Injected GitHub, decision, checkout, and environment adapters keep the complete
+path deterministic in tests. Boundary options can inject the existing
+execution-boundary isolation adapter without allowing callers to replace the
+boundary itself.
 
 ## Caller usage
 
@@ -50,15 +51,15 @@ untracked content.
 ## Synthesis decision
 
 The how walkthrough identified the existing execution boundary as the only
-trusted command-running capability. Two architect candidate lanes were started
-twice with distinct shapes. All four lanes timed out without returning a design
-artifact, so they are recorded as dropouts rather than treated as evidence. The
-chosen deep-operation shape follows the grounded design directly.
+trusted command-running capability. Competing designs were considered against
+that boundary, and the chosen deep-operation shape follows the grounded design
+directly.
 
 The lifecycle/session alternative would make transitions explicit, but it would
 expose temporal coordination and duplicate invariants already owned by the
 executor. The single operation hides that coordination while keeping the public
-data shape explicit and testable.
+data shape explicit and testable. The public operation always constructs the
+issue #2 execution boundary; test seams replace only its isolation adapter.
 
 ## Tradeoffs accepted
 

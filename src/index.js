@@ -5,6 +5,5 @@ export {
 
 export {
   createIssueProofPlay,
-  proveTicket,
   runIssueProof,
 } from './issue-proof.js';
