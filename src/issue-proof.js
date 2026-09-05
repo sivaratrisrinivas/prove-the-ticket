@@ -11,6 +11,8 @@ const execFileAsync = promisify(execFile);
 const SCHEMA_VERSION = '1.0';
 const DEFAULT_TIMEOUT_SECONDS = 300;
 const MAX_TIMEOUT_SECONDS = 3600;
+const MAX_UNTRACKED_FILE_BYTES = 1024 * 1024;
+const MAX_UNTRACKED_BYTES = 10 * 1024 * 1024;
 const LOCAL_CHECKOUT = '<local-checkout>';
 const LOCKFILE_NAMES = [
   'package-lock.json',
@@ -30,7 +32,7 @@ const POLICY_ERROR_CODES = new Set([
  * @typedef {{path: string, mode: number, sha256: string}} ManifestEntry
  * @typedef {{path: string, mode: number, content: Uint8Array, sha256: string}} UntrackedFile
  * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[]}} DependencyTree
- * @typedef {{sourcePath: string, commitSha: string, trackedPatch: Uint8Array, manifest: ManifestEntry[], untrackedFiles: UntrackedFile[], dependencyTree?: DependencyTree, gitStatus: string}} ExecutorProofSubject
+ * @typedef {{sourcePath: string, commitSha: string, trackedPatch: Uint8Array, manifest: ManifestEntry[], untrackedFiles: UntrackedFile[], untrackedPaths?: string[], dependencyTree?: DependencyTree, gitStatus: string}} ExecutorProofSubject
  * @typedef {{executable: string, args: string[], cwd: string, timeoutSeconds: number, environmentPolicy: {variables: Record<string, string>, inherit: string[]}}} ApprovedCommand
  * @typedef {{id: string, command: ApprovedCommand, criteria: string[]}} EvidenceCommand
  * @typedef {{hash: string, approval: 'PENDING'|'APPROVED', commands: EvidenceCommand[]}} EvidencePlan
@@ -48,7 +50,7 @@ class ProofError extends Error {
 }
 
 /**
- * Run the public issue-to-proof-card path for one clean Node checkout.
+ * Run the public issue-to-proof-card path for one matching Node checkout.
  *
  * @param {IssueProofInput} input
  * @param {IssueProofOptions} [options]
@@ -86,8 +88,8 @@ export async function runIssueProof(input, options = {}) {
     await confirmCriteria(runtime.decisions, criteria);
 
     const inspection = runtime.checkout.inspect
-      ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath})
-      : await inspectCleanCheckout(input.checkoutPath, input.lockfilePath, runtime);
+      ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath, decisions: runtime.decisions})
+      : await inspectCheckout(input.checkoutPath, input.lockfilePath, runtime, runtime.decisions);
     const fingerprint = normalizeInspection(inspection, input.checkoutPath);
     const commands = await selectCommands(input, input.checkoutPath, runtime.checkout, criteria);
     const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria);
@@ -104,6 +106,7 @@ export async function runIssueProof(input, options = {}) {
       plan,
       environment,
       executionResults,
+      inspectionWarnings: fingerprint.warnings,
       startedAt,
       endedAt,
       privateValues: [input.checkoutPath],
@@ -545,38 +548,43 @@ async function recheckFreshness(runtime, input, ticket, criteria, fingerprint) {
     throw new ProofError('CRITERIA_CHANGED', 'The acceptance criteria changed during the proof run.');
   }
 
+  const approvedUntrackedPaths = fingerprint.executorProofSubject.untrackedFiles.map(({path: entryPath}) => entryPath);
   const inspection = runtime.checkout.inspect
-    ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath})
-    : await inspectCleanCheckout(input.checkoutPath, input.lockfilePath, runtime);
+    ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath, approvedUntrackedPaths})
+    : await inspectCheckout(input.checkoutPath, input.lockfilePath, runtime, runtime.decisions, approvedUntrackedPaths);
   const currentFingerprint = normalizeInspection(inspection, input.checkoutPath);
-  if (currentFingerprint.codeFingerprint.digest !== fingerprint.codeFingerprint.digest) {
+  if (currentFingerprint.codeFingerprint.digest !== fingerprint.codeFingerprint.digest
+    || !samePathList(currentFingerprint.executorProofSubject.untrackedPaths, fingerprint.executorProofSubject.untrackedPaths)) {
     throw new ProofError('SOURCE_CHANGED', 'The checkout fingerprint changed during the proof run.');
   }
 }
 
-async function inspectCleanCheckout(checkoutPath, lockfilePath, runtime) {
+async function inspectCheckout(checkoutPath, lockfilePath, runtime, decisions, approvedUntrackedPaths) {
   const stat = await fs.stat(checkoutPath).catch(() => null);
   if (!stat?.isDirectory()) throw new ProofError('REPOSITORY_MISMATCH', 'The local checkout is unavailable.');
-  const packageJson = await readPackageJson(checkoutPath);
   const commitSha = (await gitBuffer(runtime, checkoutPath, ['rev-parse', 'HEAD'])).toString('utf8').trim();
   if (!/^[0-9a-f]{40,64}$/i.test(commitSha)) throw new ProofError('SNAPSHOT_MISMATCH', 'The local checkout commit is invalid.');
   const trackedPatch = await gitBuffer(runtime, checkoutPath, ['diff', '--binary', '--full-index', 'HEAD', '--']);
   const gitStatus = (await gitBuffer(runtime, checkoutPath, ['status', '--porcelain=v1', '--untracked-files=all'])).toString('utf8');
-  const untrackedPaths = (await gitBuffer(runtime, checkoutPath, ['ls-files', '--others', '--exclude-standard', '-z'])).toString('utf8');
-  if (trackedPatch.length > 0 || gitStatus.length > 0 || splitNul(Buffer.from(untrackedPaths)).length > 0) {
-    throw new ProofError('CLEAN_CHECKOUT_REQUIRED', 'Version one requires a clean local checkout.');
+  const dirtyFiles = await readDirtyFiles(checkoutPath, runtime);
+  const untrackedPaths = splitNul(await gitBuffer(runtime, checkoutPath, ['ls-files', '--others', '--exclude-standard', '-z']))
+    .map(decodePath)
+    .sort(compareStrings);
+  const untracked = await inspectUntrackedFiles(checkoutPath, untrackedPaths, decisions, approvedUntrackedPaths);
+  if (untrackedPaths.includes('package.json') && !untracked.files.some(({path: entryPath}) => entryPath === 'package.json')) {
+    throw new ProofError('NODE_PROJECT_REQUIRED', 'The checkout package.json was not included in the approved proof subject.');
   }
-
-  const manifest = await readManifest(checkoutPath, commitSha, runtime);
+  const packageJson = await readPackageJson(checkoutPath);
+  const manifest = await readManifest(checkoutPath, commitSha, runtime, untracked.files);
   const lockfile = await readLockfile(checkoutPath, lockfilePath, manifest);
   const dependencyTree = await readDependencyTree(checkoutPath, packageJson);
   const codeFingerprintBase = {
     commitSha,
     trackedPatchSha256: hashBuffer(trackedPatch),
-    dirtyFiles: [],
-    untrackedFiles: [],
+    dirtyFiles,
+    untrackedFiles: untracked.files.map(({path: entryPath, size, sha256}) => ({path: entryPath, size, sha256})),
     lockfile,
-    completeness: 'COMPLETE',
+    completeness: untracked.warnings.length === 0 ? 'COMPLETE' : 'INCOMPLETE',
   };
   const codeFingerprint = {...codeFingerprintBase, digest: hashJson(codeFingerprintBase)};
   return {
@@ -587,11 +595,131 @@ async function inspectCleanCheckout(checkoutPath, lockfilePath, runtime) {
       commitSha,
       trackedPatch,
       manifest,
-      untrackedFiles: [],
+      untrackedFiles: untracked.files,
+      untrackedPaths,
       ...(dependencyTree ? {dependencyTree} : {}),
       gitStatus,
     },
+    warnings: untracked.warnings,
   };
+}
+
+async function readDirtyFiles(checkoutPath, runtime) {
+  const output = await gitBuffer(runtime, checkoutPath, ['status', '--porcelain=v1', '--untracked-files=all', '-z']);
+  const dirtyFiles = [];
+  let offset = 0;
+  while (offset < output.length) {
+    const end = output.indexOf(0, offset);
+    if (end < 0) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git status output is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+    const record = output.subarray(offset, end);
+    if (record.length < 4 || record[2] !== 32) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git status output is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+    }
+    const status = record.subarray(0, 2).toString('ascii');
+    const entryPath = decodePath(record.subarray(3));
+    validateRepositoryPath(entryPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
+    if (status !== '??' && status !== '!!') dirtyFiles.push({path: entryPath, status});
+    offset = end + 1;
+    if (/[RC]/.test(status)) {
+      const renamedEnd = output.indexOf(0, offset);
+      if (renamedEnd < 0) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git status rename record is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+      const renamedPath = decodePath(output.subarray(offset, renamedEnd));
+      validateRepositoryPath(renamedPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
+      dirtyFiles.push({path: renamedPath, status});
+      offset = renamedEnd + 1;
+    }
+  }
+  return dirtyFiles.sort((left, right) => compareStrings(left.path, right.path) || compareStrings(left.status, right.status));
+}
+
+async function inspectUntrackedFiles(checkoutPath, untrackedPaths, decisions, approvedUntrackedPaths) {
+  const previews = [];
+  for (const entryPath of untrackedPaths) {
+    validateRepositoryPath(entryPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
+    const absolute = path.join(checkoutPath, ...entryPath.split('/'));
+    const stat = await fs.lstat(absolute).catch(() => null);
+    if (!stat) throw new ProofError('SNAPSHOT_MISMATCH', 'An untracked path is unavailable.');
+    if (stat.isSymbolicLink()) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains an untracked symlink.', {subtype: 'SYMLINK'});
+    }
+    if (!stat.isFile()) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains an untracked special file.', {subtype: 'SPECIAL_FILE'});
+    }
+    const secretReason = secretPathReason(entryPath);
+    const reason = secretReason || stat.size > MAX_UNTRACKED_FILE_BYTES
+      ? secretReason || 'FILE_TOO_LARGE'
+      : null;
+    previews.push({path: entryPath, size: stat.size, ...(reason ? {eligible: false, reason} : {eligible: true})});
+  }
+  if (previews.length === 0) return {files: [], warnings: []};
+
+  let includedBytes = 0;
+  for (const preview of previews) {
+    if (!preview.eligible) continue;
+    if (includedBytes + preview.size > MAX_UNTRACKED_BYTES) {
+      preview.eligible = false;
+      preview.reason = 'AGGREGATE_LIMIT';
+    } else {
+      includedBytes += preview.size;
+    }
+  }
+
+  const selectedPaths = approvedUntrackedPaths === undefined
+    ? await approveUntracked(decisions, previews)
+    : new Set(approvedUntrackedPaths);
+  const files = [];
+  const warnings = [];
+  for (const preview of previews) {
+    if (!preview.eligible) {
+      warnings.push({code: 'FINGERPRINT_INCOMPLETE', path: preview.path, reason: preview.reason});
+      continue;
+    }
+    if (!selectedPaths.has(preview.path)) {
+      warnings.push({code: 'FINGERPRINT_INCOMPLETE', path: preview.path, reason: 'NOT_APPROVED'});
+      continue;
+    }
+    const absolute = path.join(checkoutPath, ...preview.path.split('/'));
+    const content = await fs.readFile(absolute);
+    files.push({
+      path: preview.path,
+      mode: (await fs.stat(absolute)).mode & 0o777,
+      content,
+      size: content.length,
+      sha256: hashBuffer(content),
+    });
+  }
+  return {files, warnings};
+}
+
+async function approveUntracked(decisions, previews) {
+  const handler = decisions && (decisions.confirmUntracked || decisions.approveUntracked);
+  const eligible = previews.filter(({eligible}) => eligible).map(({path: entryPath}) => entryPath);
+  if (typeof handler !== 'function') {
+    throw new ProofError('UNTRACKED_NOT_APPROVED', 'The non-ignored untracked paths require explicit approval.');
+  }
+  const response = await handler(previews.map((preview) => ({...preview})));
+  if (response === true || response?.approved === true) return new Set(eligible);
+  const approved = Array.isArray(response) ? response : response?.approvedPaths;
+  if (Array.isArray(approved) && approved.every((entryPath) => typeof entryPath === 'string' && eligible.includes(entryPath))) {
+    return new Set(approved);
+  }
+  throw new ProofError('UNTRACKED_NOT_APPROVED', 'The untracked path set was not approved.');
+}
+
+function secretPathReason(entryPath) {
+  const lowerPath = asciiLower(entryPath);
+  const secretComponent = lowerPath.split('/').some((component) => component === '.env'
+    || component.startsWith('.env.')
+    || component === '.npmrc'
+    || component === 'id_rsa'
+    || component === 'id_ed25519'
+    || component === 'credentials'
+    || component.startsWith('credentials.'));
+  return secretComponent || ['.pem', '.key', '.p12', '.pfx'].some((suffix) => lowerPath.endsWith(suffix)) ? 'SECRET_PATH' : null;
+}
+
+function asciiLower(value) {
+  return value.replace(/[A-Z]/g, (character) => character.toLowerCase());
 }
 
 function normalizeInspection(inspection, checkoutPath) {
@@ -599,8 +727,12 @@ function normalizeInspection(inspection, checkoutPath) {
     throw new ProofError('SNAPSHOT_MISMATCH', 'The checkout fingerprint could not be assembled.');
   }
   const codeFingerprint = inspection.codeFingerprint;
-  if (codeFingerprint.completeness !== 'COMPLETE' || !codeFingerprint.digest) {
-    throw new ProofError('SNAPSHOT_MISMATCH', 'The checkout fingerprint is incomplete.');
+  const {digest, ...fingerprintFacts} = codeFingerprint;
+  if (!['COMPLETE', 'INCOMPLETE'].includes(codeFingerprint.completeness)
+    || typeof digest !== 'string'
+    || !/^[0-9a-f]{64}$/i.test(digest)
+    || hashJson(fingerprintFacts) !== digest.toLowerCase()) {
+    throw new ProofError('SNAPSHOT_MISMATCH', 'The checkout fingerprint is invalid.');
   }
   const executorProofSubject = inspection.executorProofSubject || inspection.proofSubject;
   if (!executorProofSubject || executorProofSubject.sourcePath !== checkoutPath) {
@@ -610,7 +742,12 @@ function normalizeInspection(inspection, checkoutPath) {
     codeFingerprint,
     lockfile: codeFingerprint.lockfile || {path: null, sha256: null},
     executorProofSubject,
+    warnings: Array.isArray(inspection.warnings) ? inspection.warnings : [],
   };
+}
+
+function samePathList(left = [], right = []) {
+  return JSON.stringify([...left].sort(compareStrings)) === JSON.stringify([...right].sort(compareStrings));
 }
 
 async function readPackageJson(checkoutPath) {
@@ -618,24 +755,23 @@ async function readPackageJson(checkoutPath) {
   try {
     text = await fs.readFile(path.join(checkoutPath, 'package.json'), 'utf8');
   } catch {
-    throw new ProofError('NODE_PROJECT_REQUIRED', 'The clean checkout must contain a readable package.json.');
+    throw new ProofError('NODE_PROJECT_REQUIRED', 'The checkout must contain a readable package.json.');
   }
   try {
     const value = JSON.parse(text);
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid');
     return value;
   } catch {
-    throw new ProofError('NODE_PROJECT_REQUIRED', 'The clean checkout package.json is invalid.');
+    throw new ProofError('NODE_PROJECT_REQUIRED', 'The checkout package.json is invalid.');
   }
 }
 
-async function readManifest(checkoutPath, commitSha, runtime) {
-  const output = await gitBuffer(runtime, checkoutPath, ['ls-tree', '-r', '-z', '--full-tree', commitSha]);
-  const entries = [];
-  for (const raw of splitNul(output)) {
+async function readManifest(checkoutPath, commitSha, runtime, untrackedFiles) {
+  const committed = await gitBuffer(runtime, checkoutPath, ['ls-tree', '-r', '-z', '--full-tree', commitSha]);
+  for (const raw of splitNul(committed)) {
     const tab = raw.indexOf(9);
-    if (tab < 0) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The committed tree entry is malformed.');
-    const header = raw.subarray(0, tab).toString('utf8');
+    if (tab < 0) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The committed tree entry is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+    const header = raw.subarray(0, tab).toString('ascii');
     const entryPath = decodePath(raw.subarray(tab + 1));
     const [mode, type] = header.split(' ');
     validateRepositoryPath(entryPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
@@ -643,12 +779,41 @@ async function readManifest(checkoutPath, commitSha, runtime) {
       const subtype = type === 'commit' ? 'SUBMODULE' : mode === '120000' ? 'SYMLINK' : type === 'blob' ? 'SPECIAL_FILE' : 'UNKNOWN_ENTRY_TYPE';
       throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', `The checkout contains an unsupported ${subtype} entry.`, {subtype});
     }
+  }
+
+  const indexOutput = await gitBuffer(runtime, checkoutPath, ['ls-files', '--stage', '-z']);
+  const entries = [];
+  const seen = new Set();
+  for (const raw of splitNul(indexOutput)) {
+    const tab = raw.indexOf(9);
+    if (tab < 0) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git index entry is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+    const [mode] = raw.subarray(0, tab).toString('ascii').split(' ');
+    const entryPath = decodePath(raw.subarray(tab + 1));
+    validateRepositoryPath(entryPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
+    if (seen.has(entryPath)) throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git index contains multiple stages for one path.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+    seen.add(entryPath);
+    if (!['100644', '100755'].includes(mode)) {
+      const subtype = mode === '120000' ? 'SYMLINK' : mode === '160000' ? 'SUBMODULE' : 'UNKNOWN_ENTRY_TYPE';
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', `The checkout contains an unsupported ${subtype} entry.`, {subtype});
+    }
+    const attr = await gitBuffer(runtime, checkoutPath, ['check-attr', 'filter', '--cached', '--', entryPath]);
+    if (attr.toString('utf8').trim().endsWith(': lfs')) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains a Git LFS-managed path.', {subtype: 'GIT_LFS'});
+    }
     const absolute = path.join(checkoutPath, ...entryPath.split('/'));
     const stat = await fs.lstat(absolute).catch(() => null);
-    if (!stat || !stat.isFile() || stat.isSymbolicLink()) {
-      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The clean checkout contains a non-regular file.', {subtype: stat?.isSymbolicLink() ? 'SYMLINK' : 'SPECIAL_FILE'});
+    if (!stat) continue;
+    if (stat.isSymbolicLink()) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains a tracked symlink.', {subtype: 'SYMLINK'});
     }
-    entries.push({path: entryPath, mode: Number.parseInt(mode, 8) & 0o777, sha256: hashBuffer(await fs.readFile(absolute))});
+    if (!stat.isFile()) {
+      throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains a tracked special file.', {subtype: 'SPECIAL_FILE'});
+    }
+    entries.push({path: entryPath, mode: stat.mode & 0o777, sha256: hashBuffer(await fs.readFile(absolute))});
+  }
+
+  for (const entry of untrackedFiles || []) {
+    entries.push({path: entry.path, mode: entry.mode, sha256: entry.sha256});
   }
   return entries.sort((left, right) => compareStrings(left.path, right.path));
 }
@@ -763,8 +928,11 @@ function assembleProofResult(context) {
   }));
   const commandRecords = attempts.map(({record}) => record);
   const criterionResults = context.criteria.map((criterion) => createCriterionResult(criterion, attempts));
-  const warnings = collectWarnings(attempts.flatMap(({classification}) => classification.outcome?.warnings || []));
-  const overallStatus = aggregateOverallStatus(criterionResults);
+  const warnings = collectWarnings([
+    ...(context.inspectionWarnings || []),
+    ...attempts.flatMap(({classification}) => classification.outcome?.warnings || []),
+  ], context.privateValues, redactionValues);
+  const overallStatus = aggregateOverallStatus(criterionResults, context.fingerprint.codeFingerprint);
   const codeFingerprint = sanitizeValue(context.fingerprint.codeFingerprint, context.privateValues, redactionValues);
   const stablePlanHash = publicPlan.hash;
   const publicEnvironment = sanitizeValue(context.environment, context.privateValues, redactionValues);
@@ -873,9 +1041,9 @@ function criterionRationale(status, commandCount) {
   return 'Every mapped command exited zero in the isolated execution boundary.';
 }
 
-function aggregateOverallStatus(criterionResults) {
+function aggregateOverallStatus(criterionResults, codeFingerprint = {completeness: 'COMPLETE'}) {
   if (criterionResults.some(({status}) => status === 'FAILED')) return 'FAILED';
-  if (criterionResults.some(({status}) => status === 'UNVERIFIED')) return 'INCOMPLETE';
+  if (codeFingerprint.completeness !== 'COMPLETE' || criterionResults.some(({status}) => status === 'UNVERIFIED')) return 'INCOMPLETE';
   return 'PROVED';
 }
 
@@ -907,14 +1075,25 @@ function classifyExecution(result) {
   };
 }
 
-function collectWarnings(warnings) {
+function collectWarnings(warnings, privateValues = [], redactionValues = []) {
   const unique = new Map();
   for (const warning of warnings) {
     if (!warning || typeof warning.code !== 'string') continue;
-    const normalized = {code: warning.code, ...(warning.stream ? {stream: warning.stream} : {})};
-    unique.set(JSON.stringify(normalized), normalized);
+    const normalized = {
+      code: warning.code,
+      ...(warning.path ? {path: warning.reason === 'SECRET_PATH' ? '<redacted>' : sanitizeText(warning.path, privateValues, redactionValues)} : {}),
+      ...(warning.reason ? {reason: warning.reason} : {}),
+      ...(warning.stream ? {stream: warning.stream} : {}),
+    };
+    const identity = warning.code === 'FINGERPRINT_INCOMPLETE' && warning.path
+      ? JSON.stringify({code: warning.code, path: warning.path, reason: warning.reason})
+      : JSON.stringify(normalized);
+    unique.set(identity, normalized);
   }
-  return [...unique.values()].sort((left, right) => compareStrings(left.code, right.code) || compareStrings(left.stream || '', right.stream || ''));
+  return [...unique.values()].sort((left, right) => compareStrings(left.code, right.code)
+    || compareStrings(left.reason || '', right.reason || '')
+    || compareStrings(left.path || '', right.path || '')
+    || compareStrings(left.stream || '', right.stream || ''));
 }
 
 function makeProofError(error, ticket, input, redactionValues = []) {
@@ -961,7 +1140,7 @@ function renderProofCard(artifact) {
       if (combined) lines.push(combined);
     }
   }
-  if (artifact.warnings.length > 0) lines.push(`Warnings: ${artifact.warnings.map((warning) => warning.code).join(', ')}`);
+  if (artifact.warnings.length > 0) lines.push(`Warnings: ${artifact.warnings.map((warning) => [warning.code, warning.reason, warning.path].filter(Boolean).join(' ')).join(', ')}`);
   lines.push(`Overall: ${artifact.overallStatus}`);
   lines.push(`Rerun checkout: ${artifact.rerunInputs.checkoutPath}`);
   lines.push(`Proof seal: ${artifact.proofSeal}`);

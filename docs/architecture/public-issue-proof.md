@@ -1,6 +1,6 @@
 # Public issue proof
 
-Issue #4 extends the public `runIssueProof` operation from issue #3. The caller
+Issue #5 extends the public `runIssueProof` operation from issue #4. The caller
 supplies a full GitHub issue URL, a local checkout, and one or more existing Node
 verification commands. Each command maps to one or more existing acceptance
 criteria. Injected GitHub, decision, checkout, and environment adapters keep the
@@ -20,23 +20,25 @@ const result = await runIssueProof({
   ],
 }, {
   github: {readIssue},
-  decisions: {confirmCriteria, approvePlan},
+  decisions: {confirmCriteria, confirmUntracked, approvePlan},
 });
 ```
 
 The caller receives a versioned JSON result, a restrained proof card, and a
 deterministic proof seal for a trustworthy run. A rejected confirmation or a
 pre-result safety failure returns a typed run error without an overall status or
-seal.
+seal. When the checkout has non-ignored untracked paths, `confirmUntracked`
+must approve their metadata-only preview before any eligible content is read.
 
 ## Shape
 
 The operation owns the lifecycle in this order: parse and anonymously read the
-public issue, normalize and match the checkout remote, extract the existing
-criteria, confirm the complete list, fingerprint the clean checkout, build and
-approve an independent command plan, execute every command through the issue #2
-boundary, classify each outcome, aggregate each mapped criterion, and assemble
-the public artifacts.
+public issue, normalize and match the checkout remote, extract and confirm the
+existing criteria, capture staged and unstaged tracked state, preview and
+approve untracked paths before reading eligible bytes, fingerprint the checkout,
+build and approve an independent command plan, execute every command through the
+issue #2 boundary, classify each outcome, aggregate each mapped criterion, and
+assemble the public artifacts.
 
 The plan contains ordered command entries with identity-derived IDs, normalized
 command identities, and criterion-ID mappings. A command mapping is explicit when the
@@ -53,11 +55,12 @@ outcome, unless another mapped command has already failed it.
 
 The domain is represented by a proof subject containing the criteria hash and a
 repository-only code fingerprint. The executor receives a separate private
-subject containing the absolute checkout path, manifest, patch bytes, and
-dependency location. This separation keeps local operational state out of
-shareable JSON. Run errors and command outcomes remain distinct result variants,
-so a command failure can be reported as `FAILED` while a snapshot or isolation
-failure has no status or seal.
+subject containing the absolute checkout path, manifest, patch bytes, included
+untracked bytes, all observed untracked paths, and dependency location. This
+separation keeps local operational state and excluded path contents out of
+shareable JSON. An incomplete fingerprint is a qualified run and forces
+`INCOMPLETE`; snapshot, unsupported-shape, freshness, or isolation failures
+remain run errors with no status or seal.
 
 Criteria, fingerprints, plans, and seal facts use canonical JSON before hashing.
 The seal projection includes only stable proof facts. Output excerpts,
@@ -83,8 +86,8 @@ issue #2 execution boundary; test seams replace only its isolation adapter.
   agree about one proof subject and one run lifecycle.
 - The default GitHub adapter performs only an anonymous read; private access and
   every GitHub write remain outside this version.
-- The clean-checkout restriction is deliberate. Dirty reconstruction belongs to
-  issue #5 after the public seam exists.
+- The inspector owns dirty-state policy and path preview. The execution boundary
+  only reconstructs the approved private subject.
 - The plan accepts only independent automated commands. Dependencies and output
   selection remain outside version one.
 - Adapter seams are test-facing inputs, not extra production lifecycle methods.

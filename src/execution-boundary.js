@@ -30,7 +30,7 @@ const WARNING_ORDER = new Map([
  * @typedef {{path: string, mode: number|string, sha256: string}} ManifestEntry
  * @typedef {{path: string, mode: number|string, content: Uint8Array|string, sha256?: string}} UntrackedFile
  * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[]}} DependencyTree
- * @typedef {{sourcePath: string, commitSha: string, trackedPatch?: Uint8Array|string, manifest: ManifestEntry[], untrackedFiles?: UntrackedFile[], dependencyTree?: DependencyTree, gitStatus: string}} ProofSubject
+ * @typedef {{sourcePath: string, commitSha: string, trackedPatch?: Uint8Array|string, manifest: ManifestEntry[], untrackedFiles?: UntrackedFile[], untrackedPaths?: string[], dependencyTree?: DependencyTree, gitStatus: string}} ProofSubject
  * @typedef {{executable: string, args?: string[], cwd?: string, timeoutSeconds?: number, environmentPolicy?: {variables?: Record<string, string>, inherit?: string[]}}} ApprovedCommand
  * @typedef {{proofSubject: ProofSubject, approvedCommand: ApprovedCommand, command?: ApprovedCommand, redactionValues?: string[]}} ExecutionRequest
  * @typedef {{state: 'EXITED'|'SIGNALED'|'TIMED_OUT', exitCode: number|null, signal: string|null, stdout?: Uint8Array|string, stderr?: Uint8Array|string, durationMs?: number}} ProcessOutcome
@@ -267,6 +267,23 @@ function validateProofSubject(subject) {
     }
     untrackedPaths.add(entry.path);
   }
+  const observedUntrackedPaths = subject.untrackedPaths || [...untrackedPaths];
+  if (!Array.isArray(observedUntrackedPaths)) {
+    throw new BoundaryError('SNAPSHOT_MISMATCH', 'The observed untracked paths are not an array.');
+  }
+  const observedPaths = new Set();
+  for (const entryPath of observedUntrackedPaths) {
+    validateRelativePath(entryPath, 'UNSUPPORTED_CHECKOUT_SHAPE', true);
+    if (observedPaths.has(entryPath)) {
+      throw new BoundaryError('SNAPSHOT_MISMATCH', 'The observed untracked paths contain duplicates.');
+    }
+    observedPaths.add(entryPath);
+  }
+  for (const entryPath of untrackedPaths) {
+    if (!observedPaths.has(entryPath)) {
+      throw new BoundaryError('SNAPSHOT_MISMATCH', 'An included untracked path was not observed.');
+    }
+  }
 
   if (subject.dependencyTree) {
     if (!subject.dependencyTree.sourcePath || !path.isAbsolute(subject.dependencyTree.sourcePath)) {
@@ -465,8 +482,9 @@ async function validateCheckoutShape(subject, runtime) {
 
 /** @param {ProofSubject} subject */
 async function validateApprovedUntrackedPaths(subject) {
-  for (const entry of subject.untrackedFiles || []) {
-    const stat = await fs.lstat(resolveInside(subject.sourcePath, entry.path)).catch(() => null);
+  const paths = subject.untrackedPaths || (subject.untrackedFiles || []).map(({path: entryPath}) => entryPath);
+  for (const entryPath of paths) {
+    const stat = await fs.lstat(resolveInside(subject.sourcePath, entryPath)).catch(() => null);
     if (stat?.isSymbolicLink()) {
       throw new BoundaryError('UNSUPPORTED_CHECKOUT_SHAPE', 'The checkout contains an untracked symlink.', {subtype: 'SYMLINK'});
     }
@@ -500,7 +518,7 @@ async function validateCommittedTree(treeOutput, sourcePath, runtime) {
   const entries = splitNul(treeOutput);
   for (const rawEntry of entries) {
     const tab = rawEntry.indexOf(9);
-    if (tab < 0) throw new BoundaryError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git tree entry is malformed.');
+    if (tab < 0) throw new BoundaryError('UNSUPPORTED_CHECKOUT_SHAPE', 'The Git tree entry is malformed.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
     const header = decodeUtf8(rawEntry.subarray(0, tab));
     let entryPath;
     try {
@@ -914,6 +932,15 @@ function collectRedactionValues(request) {
   for (const name of command.environmentPolicy?.inherit || []) {
     if (process.env[name]) values.add(process.env[name]);
   }
+  for (const entry of request.proofSubject?.untrackedFiles || []) {
+    const bytes = toBuffer(entry.content);
+    if (isBinary(bytes)) continue;
+    const text = decodeUtf8(bytes);
+    if (text) values.add(text);
+    for (const line of text.split(/\r?\n/)) {
+      if (line) values.add(line);
+    }
+  }
   for (const [name, value] of Object.entries(process.env)) {
     if (/(token|secret|password|credential|private|authorization|api[_-]?key)/i.test(name) && value) values.add(value);
   }
@@ -1051,7 +1078,7 @@ async function assertProofSubjectMatches(subject, state, mismatchCode) {
     mode: normalizeMode(entry.mode, mismatchCode),
     sha256: entry.sha256.toLowerCase(),
   })).sort(compareManifestEntries);
-  const expectedUntrackedPaths = (subject.untrackedFiles || []).map((entry) => entry.path).sort();
+  const expectedUntrackedPaths = (subject.untrackedPaths || (subject.untrackedFiles || []).map((entry) => entry.path)).sort();
   if (state.commitSha !== subject.commitSha || state.trackedPatchSha256 !== patchHash || state.manifestDigest !== hashJson(expectedManifest) || state.status !== subject.gitStatus || JSON.stringify(state.untrackedPaths) !== JSON.stringify(expectedUntrackedPaths)) {
     throw new BoundaryError(mismatchCode, 'The source checkout does not match the fingerprinted proof subject.');
   }

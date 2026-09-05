@@ -1,10 +1,12 @@
 # prove-the-ticket
 
-`prove-the-ticket` turns one public GitHub issue and one matching clean Node
-checkout into a proof card. It reads the issue anonymously, asks the user to
-confirm the existing acceptance criteria, asks for approval of an independent
-verification command plan, and runs every command through the isolated
-execution boundary from issue #2. The workflow does not write to GitHub.
+`prove-the-ticket` checks one public GitHub issue against one matching local Node
+checkout and returns a proof card. It reads the issue anonymously, asks the user
+to confirm the existing acceptance criteria, previews non-ignored untracked paths
+before any content access, asks for approval of an independent verification
+command plan, and runs every command through the isolated execution boundary from
+issue #2.
+The workflow does not write to GitHub.
 
 ## Public issue proof
 
@@ -21,6 +23,7 @@ const result = await runIssueProof({
 }, {
   decisions: {
     confirmCriteria: async (criteria) => confirmCriteriaWithUser(criteria),
+    confirmUntracked: async (previews) => confirmUntrackedWithUser(previews),
     approvePlan: async (plan) => approvePlanWithUser(plan),
   },
 });
@@ -43,10 +46,14 @@ returns `{approved: true, plan: revisedPlan}`, the operation hashes the revised
 plan, marks it pending, and asks for approval again. It never executes an
 edited plan without a second approval.
 
-The checkout must be clean. The code fingerprint records the commit, an empty
-tracked-patch hash, empty dirty and untracked lists, lockfile identity or
-explicit absence, `COMPLETE`, and a digest. Environment details remain outside
-that fingerprint.
+The checkout may contain staged or unstaged tracked changes and approved safe
+untracked files. The code fingerprint records the commit, one binary full-index
+patch hash, sorted dirty paths and statuses, safe-untracked path, size, and
+content-hash records, lockfile identity or explicit absence, completeness, and a
+digest. Secret-like, oversized, over-limit, or unapproved untracked paths are
+never read. Each such path emits `FINGERPRINT_INCOMPLETE`, so a qualified run
+cannot be `PROVED`. When non-ignored untracked paths exist, `confirmUntracked`
+must approve the metadata-only preview before eligible contents are read.
 
 The plan contains the exact commands and their criterion mappings. The default
 timeout is 300 seconds. Callers may set a timeout from 1 through 3,600 seconds.
@@ -63,7 +70,8 @@ A criterion is `PROVED` only when every mapped command exits zero. A nonzero
 exit or signal makes a mapped criterion `FAILED`. A timeout, unavailable
 dependency tree, policy failure, or missing mapping makes it `UNVERIFIED`.
 The overall result is `FAILED` when any criterion fails. Otherwise it is
-`INCOMPLETE` when any criterion is unverified.
+`INCOMPLETE` when any criterion is unverified or the code fingerprint is
+incomplete.
 
 Isolation, snapshot, source-freshness, and internal failures happen before a
 trustworthy command result exists. Those errors return no overall status and no
@@ -111,9 +119,10 @@ npm run check
 npm test
 ```
 
-The tests cover the public success path, URL and remote validation, ordered
-criteria and checked metadata, shared and unmapped command mappings, repeated
-plan approval after edits, nonzero and signal outcomes, independent progress,
-timeouts, missing dependencies, policy rejection, freshness changes, output
-privacy, stable seals, and the real Bubblewrap path when the host provides the
-required Linux capabilities.
+The tests cover the public success path, dirty tracked reconstruction, binary
+patches, safe-untracked preview, approval, and limits, secret-path exclusions,
+lockfile selection, ordered criteria and checked metadata, shared and unmapped
+command mappings, repeated plan approval after edits, nonzero and signal
+outcomes, independent progress, timeouts, missing dependencies, policy
+rejection, freshness changes, output privacy, stable seals, and the real
+Bubblewrap path when the host provides the required Linux capabilities.

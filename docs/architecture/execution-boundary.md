@@ -13,7 +13,7 @@ const result = await executeProofCommand({
 });
 ```
 
-The subject contains the private local checkout path, commit, tracked patch bytes, an ordinary-file manifest, approved untracked file bytes, and an optional existing dependency tree. The command contains the executable, argument boundaries, repository-relative working directory, timeout, and environment policy.
+The subject contains the private local checkout path, commit, tracked patch bytes, an ordinary-file manifest, approved untracked file bytes, all observed untracked paths, and an optional existing dependency tree. The command contains the executable, argument boundaries, repository-relative working directory, timeout, and environment policy. The public inspection layer owns path preview, approval, secret exclusion, and size limits.
 
 The caller receives one of two result shapes.
 
@@ -29,13 +29,13 @@ The executor validates the subject and command at the boundary. It rejects insta
 
 The executor compares the reconstructed manifest with the subject before it calls the isolation adapter. The default Linux adapter mounts the snapshot and dependency tree read-only, mounts scratch space writable, clears the command environment, creates a network and process namespace with Bubblewrap, and starts the exact approved executable.
 
-The executor drains both output streams into bounded buffers. It retains at most 32 KiB from each end of a 64 KiB stream. It masks credential values and private paths before it returns output. Binary output becomes a byte count and SHA-256 hash.
+The executor drains both output streams into bounded buffers. It retains at most 32 KiB from each end of a 64 KiB stream. It masks credential values, included untracked text, and private paths before it returns output. Binary output becomes a byte count and SHA-256 hash.
 
 After the command exits, the executor recomputes the commit, tracked patch, Git status, proof manifest, and dependency digest. Any change returns `SOURCE_CHANGED` and discards the command result. A `finally`-equivalent cleanup step removes the temporary workspace for every path after workspace creation.
 
 ## Data shape
 
-The manifest is the central proof-subject structure. Each entry has a repository-relative path, permission mode, and SHA-256 content hash. Snapshot verification sorts entries by path and compares the complete canonical manifest.
+The manifest is the central proof-subject structure. Each entry has a repository-relative path, permission mode, and SHA-256 content hash. Snapshot verification sorts entries by path and compares the complete canonical manifest reconstructed from the commit, binary tracked patch, and approved untracked files. Excluded untracked paths remain path-only state for source matching and cannot make a fingerprint `PROVED`.
 
 Execution states form a closed set: `EXITED`, `SIGNALED`, and `TIMED_OUT`. Run errors use fixed codes such as `SNAPSHOT_MISMATCH`, `ISOLATION_UNAVAILABLE`, `DEPENDENCIES_UNAVAILABLE`, and `SOURCE_CHANGED`. This keeps command failure distinct from a run that could not produce trustworthy evidence.
 

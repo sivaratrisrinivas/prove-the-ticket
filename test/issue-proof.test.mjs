@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promises as fs} from 'node:fs';
 import os from 'node:os';
@@ -564,12 +565,191 @@ test('keeps the criteria hash independent from checked state and presentation wh
   }
 });
 
-test('requires a clean checkout and rejects competing lockfiles', async () => {
+test('reconstructs staged, unstaged, added, and binary tracked changes', async () => {
+  const fixture = await createFixture({binary: true});
+  try {
+    await fs.writeFile(path.join(fixture.root, 'source.js'), 'staged\n');
+    await git(fixture.root, ['add', 'source.js']);
+    await fs.writeFile(path.join(fixture.root, 'source.js'), 'unstaged\n');
+    await fs.writeFile(path.join(fixture.root, 'src/blob.bin'), Buffer.from([0, 255, 4, 3]));
+    await git(fixture.root, ['add', 'src/blob.bin']);
+    await fs.writeFile(path.join(fixture.root, 'added.js'), 'added\n');
+    await git(fixture.root, ['add', 'added.js']);
+
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async (context) => {
+          assert.equal(await fs.readFile(path.join(context.snapshotPath, 'source.js'), 'utf8'), 'unstaged\n');
+          assert.equal(await fs.readFile(path.join(context.snapshotPath, 'added.js'), 'utf8'), 'added\n');
+          assert.deepEqual(await fs.readFile(path.join(context.snapshotPath, 'src/blob.bin')), Buffer.from([0, 255, 4, 3]));
+          return processOutcome();
+        },
+      }},
+    }));
+
+    assert.deepEqual(result.proofSubject.codeFingerprint.dirtyFiles, [
+      {path: 'added.js', status: 'A '},
+      {path: 'source.js', status: 'MM'},
+      {path: 'src/blob.bin', status: 'M '},
+    ]);
+    assert.equal(result.overallStatus, 'PROVED');
+    assert.equal(await fs.readFile(path.join(fixture.root, 'source.js'), 'utf8'), 'unstaged\n');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('previews untracked paths before reading safe content and marks exclusions incomplete', async () => {
+  const fixture = await createFixture();
+  const previews = [];
+  try {
+    await fs.writeFile(path.join(fixture.root, 'safe.txt'), 'safe-content\n');
+    await fs.mkdir(path.join(fixture.root, 'nested'));
+    await fs.writeFile(path.join(fixture.root, 'nested/.EnV.Secret'), 'secret-content\n');
+    await fs.writeFile(path.join(fixture.root, 'certificate.PEM'), 'certificate-content\n');
+    await fs.writeFile(path.join(fixture.root, 'large.bin'), Buffer.alloc(1024 * 1024 + 1, 'x'));
+
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      decisions: {
+        confirmCriteria: async () => true,
+        confirmUntracked: async (paths) => {
+          previews.push(paths);
+          assert.equal(paths.some((entry) => Object.hasOwn(entry, 'content')), false);
+          return true;
+        },
+        approvePlan: async () => true,
+      },
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async () => outcomeWithOutput('safe-content\n'),
+      }},
+    }));
+
+    assert.equal(previews.length, 1);
+    assert.deepEqual(previews[0].map(({path: entryPath}) => entryPath), [
+      'certificate.PEM',
+      'large.bin',
+      'nested/.EnV.Secret',
+      'safe.txt',
+    ]);
+    assert.equal(result.proofSubject.codeFingerprint.completeness, 'INCOMPLETE');
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+    assert.deepEqual(result.warnings.filter(({code}) => code === 'FINGERPRINT_INCOMPLETE').map(({code, reason}) => ({code, reason})), [
+      {code: 'FINGERPRINT_INCOMPLETE', reason: 'FILE_TOO_LARGE'},
+      {code: 'FINGERPRINT_INCOMPLETE', reason: 'SECRET_PATH'},
+      {code: 'FINGERPRINT_INCOMPLETE', reason: 'SECRET_PATH'},
+    ]);
+    assert.equal(result.warnings.every(({path: entryPath}) => entryPath !== 'nested/.EnV.Secret' && entryPath !== 'certificate.PEM'), true);
+    assert.equal(JSON.stringify(result).includes('safe-content'), false);
+    assert.equal(JSON.stringify(result).includes('secret-content'), false);
+    assert.equal(JSON.stringify(result).includes('nested/.EnV.Secret'), false);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('requires explicit approval when non-ignored untracked paths exist', async () => {
+  const fixture = await createFixture();
+  try {
+    await fs.writeFile(path.join(fixture.root, 'safe.txt'), 'safe-content\n');
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions());
+
+    assert.equal(result.code, 'UNTRACKED_NOT_APPROVED');
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('enforces the aggregate safe-untracked limit without reading excluded content', async () => {
+  const fixture = await createFixture();
+  try {
+    for (let index = 0; index < 11; index += 1) {
+      await fs.writeFile(path.join(fixture.root, `safe-${index}.bin`), Buffer.alloc(1024 * 1024, index));
+    }
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      decisions: {confirmCriteria: async () => true, confirmUntracked: async () => true, approvePlan: async () => true},
+      boundaryOptions: {isolation: {check: async () => ({available: true}), execute: async () => processOutcome()}},
+    }));
+
+    assert.equal(result.proofSubject.codeFingerprint.untrackedFiles.length, 10);
+    assert.equal(result.proofSubject.codeFingerprint.completeness, 'INCOMPLETE');
+    assert.deepEqual(result.warnings.filter(({reason}) => reason === 'AGGREGATE_LIMIT').map(({path: entryPath}) => entryPath), ['safe-9.bin']);
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rejects an untracked symlink before planning or execution', async () => {
+  const fixture = await createFixture();
+  let planned = false;
+  try {
+    await fs.symlink('source.js', path.join(fixture.root, 'link.js'));
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      decisions: {confirmCriteria: async () => true, approvePlan: async () => { planned = true; return true; }},
+    }));
+    assert.equal(result.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
+    assert.deepEqual(result.details, {subtype: 'SYMLINK'});
+    assert.equal(planned, false);
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('fingerprints a changed selected lockfile', async () => {
+  const fixture = await createFixture();
+  try {
+    await fs.writeFile(path.join(fixture.root, 'package-lock.json'), '{"lockfileVersion":3}\n');
+    await git(fixture.root, ['add', 'package-lock.json']);
+    await git(fixture.root, ['commit', '-qm', 'add lockfile']);
+    const lockfileBytes = Buffer.from('{"lockfileVersion":4}\n');
+    await fs.writeFile(path.join(fixture.root, 'package-lock.json'), lockfileBytes);
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions());
+
+    assert.deepEqual(result.proofSubject.codeFingerprint.lockfile, {
+      path: 'package-lock.json',
+      sha256: createHash('sha256').update(lockfileBytes).digest('hex'),
+    });
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('supports tracked dirty checkouts and rejects competing lockfiles', async () => {
   const dirty = await createFixture();
   try {
     await fs.writeFile(path.join(dirty.root, 'source.js'), 'changed\n');
-    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: dirty.root}, successfulOptions());
-    assert.equal(result.code, 'CLEAN_CHECKOUT_REQUIRED');
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: dirty.root}, successfulOptions({
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async (context) => {
+          assert.equal(await fs.readFile(path.join(context.snapshotPath, 'source.js'), 'utf8'), 'changed\n');
+          return processOutcome();
+        },
+      }},
+    }));
+    assert.equal(result.kind, 'proof-run');
+    assert.deepEqual(result.proofSubject.codeFingerprint.dirtyFiles, [{path: 'source.js', status: ' M'}]);
+    assert.notEqual(result.proofSubject.codeFingerprint.trackedPatchSha256, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+    assert.equal(result.overallStatus, 'PROVED');
   } finally {
     await remove(dirty.root);
   }
@@ -629,13 +809,17 @@ function outcomeWithOutput(output) {
   return {...processOutcome(), stdout: Buffer.from(output)};
 }
 
-async function createFixture({remote = 'https://github.com/Owner/Repository.git', dependencies = false} = {}) {
+async function createFixture({remote = 'https://github.com/Owner/Repository.git', dependencies = false, binary = false} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-issue-proof-'));
   const packageJson = dependencies
     ? '{"name":"fixture","scripts":{"test":"node --version"},"dependencies":{"missing-package":"1.0.0"}}\n'
     : '{"name":"fixture","scripts":{"test":"node --version"}}\n';
   await fs.writeFile(path.join(root, 'package.json'), packageJson);
   await fs.writeFile(path.join(root, 'source.js'), 'export const value = 1;\n');
+  if (binary) {
+    await fs.mkdir(path.join(root, 'src'));
+    await fs.writeFile(path.join(root, 'src/blob.bin'), Buffer.from([0, 1, 2, 3]));
+  }
   await git(root, ['init', '-q']);
   await git(root, ['config', 'user.name', 'Proof Fixture']);
   await git(root, ['config', 'user.email', 'proof@example.invalid']);
