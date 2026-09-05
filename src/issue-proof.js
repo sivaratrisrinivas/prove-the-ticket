@@ -61,6 +61,7 @@ export async function runIssueProof(input, options = {}) {
   const runtime = createRuntime(options);
   const startedAt = runtime.now();
   let ticket = null;
+  let executionResults = [];
 
   try {
     validateInput(input);
@@ -96,7 +97,7 @@ export async function runIssueProof(input, options = {}) {
     const commands = await selectCommands(input, input.checkoutPath, runtime.checkout, criteria);
     const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria, input.checkoutPath);
     const environment = normalizeEnvironment(await readExecutionEnvironment(runtime, fingerprint.lockfile));
-    const executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
+    executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
     if (!executionResults.some((result) => classifyExecution(result).kind === 'pre-result-error')) {
       await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
     }
@@ -120,7 +121,7 @@ export async function runIssueProof(input, options = {}) {
     return makeProofError(error, ticket, input, [
       ...(options.redactionValues || []),
       ...explicitCommandRedactionValues(input),
-    ]);
+    ], summarizeCleanup(executionResults.map((result) => classifyExecution(result))));
   }
 }
 
@@ -1153,7 +1154,7 @@ function collectWarnings(warnings, privateValues = [], redactionValues = []) {
     || compareStrings(left.stream || '', right.stream || ''));
 }
 
-function makeProofError(error, ticket, input, redactionValues = []) {
+function makeProofError(error, ticket, input, redactionValues = [], cleanup = {state: 'NOT_REQUIRED'}) {
   const proofError = error instanceof ProofError
     ? error
     : new ProofError('INTERNAL_EXECUTION_ERROR', error instanceof Error ? error.message : String(error));
@@ -1168,7 +1169,7 @@ function makeProofError(error, ticket, input, redactionValues = []) {
     overallStatus: null,
     proofSeal: null,
     warnings: [],
-    cleanup: {state: 'NOT_REQUIRED'},
+    cleanup: sanitizeValue(cleanup, privateValues, redactionValues),
   };
 }
 

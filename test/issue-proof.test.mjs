@@ -417,6 +417,32 @@ test('rechecks the public criteria before sealing', async () => {
 
     assert.equal(issueReads, 2);
     assert.equal(result.code, 'CRITERIA_CHANGED');
+    assert.equal(result.cleanup.state, 'CLEANED');
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('preserves cleanup when freshness detects source mutation after execution', async () => {
+  const fixture = await createFixture();
+  let issueReads = 0;
+  try {
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      github: {
+        readIssue: async () => {
+          issueReads += 1;
+          if (issueReads === 2) await fs.writeFile(path.join(fixture.root, 'source.js'), 'changed after execution\n');
+          return issue();
+        },
+      },
+    }));
+
+    assert.equal(issueReads, 2);
+    assert.equal(result.code, 'SOURCE_CHANGED');
+    assert.equal(result.sourceIntegrity, 'CHANGED');
+    assert.equal(result.cleanup.state, 'CLEANED');
     assert.equal(result.overallStatus, null);
     assert.equal(result.proofSeal, null);
   } finally {
