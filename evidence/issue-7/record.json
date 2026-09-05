@@ -2,6 +2,11 @@
   "schemaVersion": "1.0",
   "repository": "sivaratrisrinivas/prove-the-ticket",
   "issueNumber": 6,
+  "canonicalRepositoryMatch": {
+    "issueRepository": "sivaratrisrinivas/prove-the-ticket",
+    "checkoutRemote": "https://github.com/sivaratrisrinivas/prove-the-ticket.git",
+    "matched": true
+  },
   "demonstratedCommit": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
   "overallStatus": "PROVED",
   "proofSeal": "sha256-v1:872544e3d26caea3c7cd7ecb6f50dcae77ffc1e7c57f57e53e2258c1b0bbd8a6",

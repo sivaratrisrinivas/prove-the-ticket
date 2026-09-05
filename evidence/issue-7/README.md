@@ -17,5 +17,6 @@ public issue endpoint and observed no GitHub writes. It ran `npm run check` and
 all 20 criteria were `PROVED`, the fingerprint was `COMPLETE`, and source
 integrity matched before and after execution.
 
-The evidence files were retained after the proof completed, so they were not
-part of the demonstrated proof subject. No GitHub write was performed.
+The final artifact bytes were refreshed after the proof completed. The
+demonstrated checkout itself was clean at the recorded commit; the evidence
+directory was already tracked before that run. No GitHub write was performed.
