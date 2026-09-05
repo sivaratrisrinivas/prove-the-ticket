@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {promisify} from 'node:util';
 
+import {hashCanonicalJson} from './canonical-json.js';
+import {isAbsoluteCommandPath, isSafeCommandExecutable} from './command-policy.js';
 import {createExecutionBoundary} from './execution-boundary.js';
 
 const execFileAsync = promisify(execFile);
@@ -31,7 +33,7 @@ const POLICY_ERROR_CODES = new Set([
 /**
  * @typedef {{path: string, mode: number, sha256: string}} ManifestEntry
  * @typedef {{path: string, mode: number, content: Uint8Array, sha256: string}} UntrackedFile
- * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[]}} DependencyTree
+ * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[], digest?: string}} DependencyTree
  * @typedef {{sourcePath: string, commitSha: string, trackedPatch: Uint8Array, manifest: ManifestEntry[], untrackedFiles: UntrackedFile[], untrackedPaths?: string[], dependencyTree?: DependencyTree, gitStatus: string}} ExecutorProofSubject
  * @typedef {{executable: string, args: string[], cwd: string, timeoutSeconds: number, environmentPolicy: {variables: Record<string, string>, inherit: string[]}}} ApprovedCommand
  * @typedef {{id: string, command: ApprovedCommand, criteria: string[]}} EvidenceCommand
@@ -92,7 +94,7 @@ export async function runIssueProof(input, options = {}) {
       : await inspectCheckout(input.checkoutPath, input.lockfilePath, runtime, runtime.decisions);
     const fingerprint = normalizeInspection(inspection, input.checkoutPath);
     const commands = await selectCommands(input, input.checkoutPath, runtime.checkout, criteria);
-    const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria);
+    const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria, input.checkoutPath);
     const environment = normalizeEnvironment(await readExecutionEnvironment(runtime, fingerprint.lockfile));
     const executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
     await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
@@ -113,7 +115,10 @@ export async function runIssueProof(input, options = {}) {
       redactionValues: options.redactionValues || [],
     });
   } catch (error) {
-    return makeProofError(error, ticket, input, options.redactionValues || []);
+    return makeProofError(error, ticket, input, [
+      ...(options.redactionValues || []),
+      ...explicitCommandRedactionValues(input),
+    ]);
   }
 }
 
@@ -350,7 +355,7 @@ async function confirmCriteria(decisions, criteria) {
   }
 }
 
-async function approvePlan(decisions, initialPlan, criteria) {
+async function approvePlan(decisions, initialPlan, criteria, checkoutPath) {
   const handler = typeof decisions === 'function' ? decisions : decisions.approvePlan;
   if (typeof handler !== 'function') {
     throw new ProofError('PLAN_NOT_APPROVED', 'The complete verification command plan was not approved.');
@@ -360,7 +365,7 @@ async function approvePlan(decisions, initialPlan, criteria) {
     const presentedPlan = clonePlan(plan);
     const response = await handler(presentedPlan);
     const proposedPlan = extractPlanProposal(response, presentedPlan);
-    const commands = normalizePlanCommands(proposedPlan.commands, criteria);
+    const commands = normalizePlanCommands(proposedPlan.commands, criteria, checkoutPath);
     const hash = hashJson({commands});
     if (hash !== plan.hash) {
       plan = {hash, approval: 'PENDING', commands};
@@ -384,18 +389,18 @@ function clonePlan(plan) {
 }
 
 async function selectCommands(input, checkoutPath, checkout, criteria) {
-  if (input.commands !== undefined) return normalizeCommandEntries(input.commands, criteria);
-  if (input.command) return normalizeCommandEntries([input.command], criteria);
-  if (typeof checkout.discoverCommands === 'function') return normalizeCommandEntries(await checkout.discoverCommands(checkoutPath), criteria);
-  if (typeof checkout.discoverCommand === 'function') return normalizeCommandEntries([await checkout.discoverCommand(checkoutPath)], criteria);
+  if (input.commands !== undefined) return normalizeCommandEntries(input.commands, criteria, checkoutPath);
+  if (input.command) return normalizeCommandEntries([input.command], criteria, checkoutPath);
+  if (typeof checkout.discoverCommands === 'function') return normalizeCommandEntries(await checkout.discoverCommands(checkoutPath), criteria, checkoutPath);
+  if (typeof checkout.discoverCommand === 'function') return normalizeCommandEntries([await checkout.discoverCommand(checkoutPath)], criteria, checkoutPath);
   const packageJson = await readPackageJson(checkoutPath);
   const scripts = packageJson.scripts && typeof packageJson.scripts === 'object' ? packageJson.scripts : {};
   const names = ['check', 'test', 'verify'].filter((name) => typeof scripts[name] === 'string');
   if (names.length === 0) throw new ProofError('COMMAND_REQUIRED', 'A Node verification command is required.');
-  return normalizeCommandEntries(names.map((name) => ({executable: 'npm', args: ['run', name]})), criteria);
+  return normalizeCommandEntries(names.map((name) => ({executable: 'npm', args: ['run', name]})), criteria, checkoutPath);
 }
 
-function normalizeCommandEntries(entries, criteria) {
+function normalizeCommandEntries(entries, criteria, checkoutPath) {
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'At least one verification command is required.');
   }
@@ -406,7 +411,7 @@ function normalizeCommandEntries(entries, criteria) {
     }
     rejectUnsupportedCommandFields(entry);
     const mapping = entry.criteria === undefined ? criteria.map(({id}) => id) : entry.criteria;
-    const command = normalizeCommand(entry);
+    const command = normalizeCommand(entry, checkoutPath);
     normalized.push({
       id: createCommandId(command),
       command,
@@ -416,7 +421,7 @@ function normalizeCommandEntries(entries, criteria) {
   return normalized;
 }
 
-function normalizePlanCommands(entries, criteria) {
+function normalizePlanCommands(entries, criteria, checkoutPath) {
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new ProofError('PLAN_NOT_APPROVED', 'The verification plan must contain at least one command.');
   }
@@ -426,7 +431,7 @@ function normalizePlanCommands(entries, criteria) {
       throw new ProofError('PLAN_NOT_APPROVED', 'The verification plan contains an invalid command.');
     }
     rejectUnsupportedCommandFields(entry, 'PLAN_NOT_APPROVED');
-    const command = normalizeCommand(entry.command);
+    const command = normalizeCommand(entry.command, checkoutPath);
     normalized.push({
       id: createCommandId(command),
       command,
@@ -451,14 +456,23 @@ function normalizeCriteriaMapping(mapping, criteria) {
   return [...mapping];
 }
 
-function normalizeCommand(command) {
+function normalizeCommand(command, checkoutPath) {
   rejectUnsupportedCommandFields(command);
   if (!command || typeof command.executable !== 'string' || command.executable.length === 0 || command.executable.includes('\0') || command.executable.includes('\n')) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command has no valid executable.');
   }
+  if (!isSafeCommandExecutable(command.executable)) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'The executable path is not an approved system command.');
+  }
+  if (isAbsoluteCommandPath(command.executable) && isPathInside(checkoutPath, command.executable)) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'The executable cannot be loaded from the local checkout.');
+  }
   const args = command.args || [];
   if (!Array.isArray(args) || args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command arguments are invalid.');
+  }
+  if (args.some((arg) => isAbsoluteCommandPath(arg))) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'Command arguments cannot contain absolute paths.');
   }
   const cwd = command.cwd || '.';
   validateRepositoryPath(cwd, 'COMMAND_NOT_APPROVED');
@@ -503,6 +517,7 @@ function commandIdentity(command) {
     args: command.args,
     cwd: command.cwd,
     timeoutSeconds: command.timeoutSeconds,
+    environmentPolicy: command.environmentPolicy,
   };
 }
 
@@ -578,12 +593,14 @@ async function inspectCheckout(checkoutPath, lockfilePath, runtime, decisions, a
   const manifest = await readManifest(checkoutPath, commitSha, runtime, untracked.files);
   const lockfile = await readLockfile(checkoutPath, lockfilePath, manifest);
   const dependencyTree = await readDependencyTree(checkoutPath, packageJson);
+  const dependencyDigest = dependencyTree?.digest || null;
   const codeFingerprintBase = {
     commitSha,
     trackedPatchSha256: hashBuffer(trackedPatch),
     dirtyFiles,
     untrackedFiles: untracked.files.map(({path: entryPath, size, sha256}) => ({path: entryPath, size, sha256})),
     lockfile,
+    dependencyDigest,
     completeness: untracked.warnings.length === 0 ? 'COMPLETE' : 'INCOMPLETE',
   };
   const codeFingerprint = {...codeFingerprintBase, digest: hashJson(codeFingerprintBase)};
@@ -710,12 +727,22 @@ function secretPathReason(entryPath) {
   const lowerPath = asciiLower(entryPath);
   const secretComponent = lowerPath.split('/').some((component) => component === '.env'
     || component.startsWith('.env.')
+    || component === '.envrc'
     || component === '.npmrc'
+    || component === '.yarnrc'
+    || component === '.yarnrc.yml'
     || component === 'id_rsa'
+    || component === 'id_dsa'
     || component === 'id_ed25519'
     || component === 'credentials'
-    || component.startsWith('credentials.'));
-  return secretComponent || ['.pem', '.key', '.p12', '.pfx'].some((suffix) => lowerPath.endsWith(suffix)) ? 'SECRET_PATH' : null;
+    || component.startsWith('credentials.')
+    || component === 'secret'
+    || component.startsWith('secret.')
+    || component.endsWith('.secret')
+    || component === 'token'
+    || component.startsWith('token.')
+    || component.endsWith('.token'));
+  return secretComponent || ['.pem', '.key', '.p8', '.p12', '.pfx', '.jks', '.keystore'].some((suffix) => lowerPath.endsWith(suffix)) ? 'SECRET_PATH' : null;
 }
 
 function asciiLower(value) {
@@ -849,9 +876,35 @@ async function readDependencyTree(checkoutPath, packageJson) {
     packageJson.peerDependencies,
   ].some((value) => value && typeof value === 'object' && Object.keys(value).length > 0);
   const dependencyPath = path.join(checkoutPath, 'node_modules');
-  const stat = await fs.stat(dependencyPath).catch(() => null);
+  const stat = await fs.lstat(dependencyPath).catch(() => null);
   if (!dependencies && !stat) return null;
-  return {sourcePath: dependencyPath};
+  if (!stat) return {sourcePath: dependencyPath};
+  if (!stat?.isDirectory() || stat.isSymbolicLink()) {
+    throw new ProofError('DEPENDENCIES_UNAVAILABLE', 'The existing dependency tree is unavailable.');
+  }
+  return {sourcePath: dependencyPath, digest: await hashDependencyTree(dependencyPath)};
+}
+
+async function hashDependencyTree(root) {
+  const entries = [];
+  async function visit(current, relative) {
+    for (const name of (await fs.readdir(current)).sort(compareStrings)) {
+      const next = path.join(current, name);
+      const nextRelative = relative ? `${relative}/${name}` : name;
+      const stat = await fs.lstat(next);
+      if (stat.isSymbolicLink()) {
+        entries.push({path: nextRelative, kind: 'symlink', target: await fs.readlink(next)});
+      } else if (stat.isDirectory()) {
+        await visit(next, nextRelative);
+      } else if (stat.isFile()) {
+        entries.push({path: nextRelative, kind: 'file', mode: stat.mode & 0o777, sha256: hashBuffer(await fs.readFile(next))});
+      } else {
+        throw new ProofError('UNSUPPORTED_CHECKOUT_SHAPE', 'The dependency tree contains an unsupported entry.', {subtype: 'UNKNOWN_ENTRY_TYPE'});
+      }
+    }
+  }
+  await visit(root, '');
+  return hashJson(entries);
 }
 
 async function readExecutionEnvironment(runtime, lockfile) {
@@ -904,15 +957,17 @@ function assembleProofResult(context) {
     planned,
     classification: classifyExecution(context.executionResults[index]),
   }));
-  const runError = classifiedAttempts.find(({classification}) => classification.kind === 'pre-result-error');
-  if (runError) {
-    return makeProofError(new ProofError(runError.classification.code, runError.classification.message, runError.classification.details), context.ticket, {checkoutPath: context.privateValues[0]}, context.redactionValues);
-  }
-
   const redactionValues = [
     ...context.redactionValues,
-    ...context.plan.commands.flatMap(({command}) => Object.values(command.environmentPolicy.variables).filter((value) => value.length >= 4)),
+    ...context.plan.commands.flatMap(({command}) => Object.values(command.environmentPolicy.variables).filter((value) => value.length > 0)),
   ];
+  const runError = classifiedAttempts.find(({classification}) => classification.kind === 'pre-result-error');
+  if (runError) {
+    const errorResult = makeProofError(new ProofError(runError.classification.code, runError.classification.message, runError.classification.details), context.ticket, {checkoutPath: context.privateValues[0]}, redactionValues);
+    if (runError.classification.cleanup) errorResult.cleanup = runError.classification.cleanup;
+    if (runError.classification.sourceIntegrity) errorResult.sourceIntegrity = runError.classification.sourceIntegrity;
+    return errorResult;
+  }
   const publicCommands = context.plan.commands.map((planned) => ({
     ...planned,
     command: sanitizeValue(planned.command, context.privateValues, redactionValues),
@@ -1072,6 +1127,8 @@ function classifyExecution(result) {
     code: result.code || 'INTERNAL_EXECUTION_ERROR',
     message: result.message || 'The execution boundary could not produce trustworthy evidence.',
     details: result.details,
+    sourceIntegrity: result.sourceIntegrity,
+    cleanup: result.cleanup,
   };
 }
 
@@ -1107,11 +1164,21 @@ function makeProofError(error, ticket, input, redactionValues = []) {
     code: proofError.code,
     message: sanitizeText(proofError.message, privateValues, redactionValues),
     ...(Object.keys(proofError.details).length > 0 ? {details: sanitizeValue(proofError.details, privateValues, redactionValues)} : {}),
+    sourceIntegrity: proofError.code === 'SOURCE_CHANGED' ? 'CHANGED' : 'UNKNOWN',
     overallStatus: null,
     proofSeal: null,
     warnings: [],
     cleanup: {state: 'NOT_REQUIRED'},
   };
+}
+
+function explicitCommandRedactionValues(input) {
+  const commands = [
+    input?.command,
+    ...(Array.isArray(input?.commands) ? input.commands : []),
+  ];
+  return commands.flatMap((command) => Object.values(command?.environmentPolicy?.variables || {}))
+    .filter((value) => typeof value === 'string' && value.length > 0);
 }
 
 function renderProofCard(artifact) {
@@ -1193,6 +1260,12 @@ function normalizeRepositoryPath(relative) {
   return relative === '.' ? '.' : relative.replace(/\/+$/, '');
 }
 
+function isPathInside(root, candidate) {
+  if (!root || !isAbsoluteCommandPath(candidate)) return false;
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+}
+
 function splitNul(value) {
   const result = [];
   let start = 0;
@@ -1229,26 +1302,15 @@ async function runFile(executable, args) {
 }
 
 function hashJson(value) {
-  return hashBuffer(Buffer.from(canonicalJson(value)));
+  try {
+    return hashCanonicalJson(value);
+  } catch {
+    throw new ProofError('INTERNAL_EXECUTION_ERROR', 'A canonical value is unsupported.');
+  }
 }
 
 function hashBuffer(value) {
   return createHash('sha256').update(value).digest('hex');
-}
-
-function canonicalJson(value) {
-  if (value === null) return 'null';
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) throw new ProofError('INTERNAL_EXECUTION_ERROR', 'A canonical value is not finite.');
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (typeof value === 'object') {
-    return `{${Object.keys(value).sort(compareStrings).map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-  }
-  throw new ProofError('INTERNAL_EXECUTION_ERROR', 'A canonical value is unsupported.');
 }
 
 function limitText(text, maxBytes) {
@@ -1256,7 +1318,27 @@ function limitText(text, maxBytes) {
   if (bytes.length <= maxBytes) return text;
   const marker = Buffer.from('\n<excerpt-omitted>\n');
   const side = Math.floor((maxBytes - marker.length) / 2);
-  return `${bytes.subarray(0, side).toString('utf8')}${marker.toString()}${bytes.subarray(-side).toString('utf8')}`;
+  return `${trimUtf8End(bytes.subarray(0, side)).toString('utf8')}${marker.toString()}${trimUtf8Start(bytes.subarray(-side)).toString('utf8')}`;
+}
+
+function trimUtf8End(value) {
+  for (let end = value.length; end >= Math.max(0, value.length - 4); end -= 1) {
+    try {
+      new TextDecoder('utf-8', {fatal: true}).decode(value.subarray(0, end));
+      return value.subarray(0, end);
+    } catch {}
+  }
+  return Buffer.alloc(0);
+}
+
+function trimUtf8Start(value) {
+  for (let start = 0; start <= Math.min(4, value.length); start += 1) {
+    try {
+      new TextDecoder('utf-8', {fatal: true}).decode(value.subarray(start));
+      return value.subarray(start);
+    } catch {}
+  }
+  return Buffer.alloc(0);
 }
 
 function compareStrings(left, right) {

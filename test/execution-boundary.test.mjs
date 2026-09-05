@@ -153,6 +153,100 @@ test('rejects install commands before isolation or process creation', async () =
   await remove(fixture.root);
 });
 
+test('rejects yarn dlx and unrelated absolute command paths before isolation', async () => {
+  const fixture = await createFixture();
+  let checked = 0;
+  try {
+    const isolation = {
+      check: async () => { checked += 1; return {available: true}; },
+      execute: async () => ({state: 'EXITED', exitCode: 0, signal: null}),
+    };
+    const yarn = {...fixture.request.command, executable: 'yarn', args: ['dlx', 'package']};
+    const yarnResult = await executeProofCommand({...fixture.request, approvedCommand: yarn, command: yarn}, {isolation});
+    assert.equal(yarnResult.code, 'INSTALL_COMMAND_REJECTED');
+
+    const corepack = {...fixture.request.command, executable: 'corepack', args: ['yarn', 'add', 'package']};
+    const corepackResult = await executeProofCommand({...fixture.request, approvedCommand: corepack, command: corepack}, {isolation});
+    assert.equal(corepackResult.code, 'INSTALL_COMMAND_REJECTED');
+
+    const absolute = {...fixture.request.command, executable: path.join(fixture.root, 'run.js')};
+    const absoluteResult = await executeProofCommand({...fixture.request, approvedCommand: absolute, command: absolute}, {isolation});
+    assert.equal(absoluteResult.code, 'COMMAND_NOT_APPROVED');
+
+    const argument = {...fixture.request.command, args: [path.join(fixture.root, 'secret.txt')]};
+    const argumentResult = await executeProofCommand({...fixture.request, approvedCommand: argument, command: argument}, {isolation});
+    assert.equal(argumentResult.code, 'COMMAND_NOT_APPROVED');
+    assert.equal(checked, 0);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('fails closed for stale manifests and timeout values outside policy', async () => {
+  const fixture = await createFixture();
+  let checked = 0;
+  try {
+    const isolation = {
+      check: async () => { checked += 1; return {available: true}; },
+      execute: async () => ({state: 'EXITED', exitCode: 0, signal: null}),
+    };
+    const stale = {
+      ...fixture.request,
+      proofSubject: {
+        ...fixture.request.proofSubject,
+        manifest: fixture.request.proofSubject.manifest.map((entry, index) => index === 0 ? {...entry, sha256: '0'.repeat(64)} : entry),
+      },
+    };
+    const staleResult = await executeProofCommand(stale, {isolation});
+    assert.equal(staleResult.code, 'SNAPSHOT_MISMATCH');
+
+    for (const timeoutSeconds of [0, 3601]) {
+      const command = {...fixture.request.command, timeoutSeconds};
+      const result = await executeProofCommand({...fixture.request, approvedCommand: command, command}, {isolation});
+      assert.equal(result.code, 'COMMAND_NOT_APPROVED');
+    }
+    assert.equal(checked, 0);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('redacts explicit environment values even when they are short', async () => {
+  const fixture = await createFixture();
+  const command = {...fixture.request.command, environmentPolicy: {variables: {TOKEN: 'x'}}};
+  try {
+    const result = await executeProofCommand({...fixture.request, approvedCommand: command, command}, {
+      isolation: adapter(async () => ({
+        state: 'EXITED',
+        exitCode: 0,
+        signal: null,
+        stdout: Buffer.from('x\n'),
+        stderr: Buffer.alloc(0),
+      })),
+    });
+    assert.equal(result.output.streams.stdout.excerpt, '<redacted>\n');
+    assert.equal(result.command.environmentPolicy.variables.TOKEN, '<redacted>');
+    assert.deepEqual(result.warnings, [{code: 'VALUE_REDACTED', stream: 'stdout'}]);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('clips long UTF-8 output without replacement characters', async () => {
+  const fixture = await createFixture();
+  const output = Buffer.from(`a${'😀'.repeat(20000)}z`);
+  try {
+    const result = await executeProofCommand(fixture.request, {
+      isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null, stdout: output, stderr: Buffer.alloc(0)})),
+    });
+    const excerpt = result.output.streams.stdout.excerpt;
+    assert.equal(excerpt.includes('\ufffd'), false);
+    assert.equal(Buffer.byteLength(excerpt) <= 4096, true);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('rejects a command changed after approval', async () => {
   const fixture = await createFixture();
   const result = await executeProofCommand({...fixture.request, command: {...fixture.request.command, args: ['-e', 'changed']}}, {
@@ -216,6 +310,7 @@ test('discards apparent command results when the source changes', async () => {
 
   assert.equal(result.kind, 'run-error');
   assert.equal(result.code, 'SOURCE_CHANGED');
+  assert.equal(result.sourceIntegrity, 'CHANGED');
   assert.equal(result.proofSeal, null);
   assert.equal(result.cleanup.state, 'CLEANED');
   await remove(fixture.root);
@@ -233,6 +328,7 @@ test('checks source integrity when isolation fails internally', async () => {
 
     assert.equal(result.kind, 'run-error');
     assert.equal(result.code, 'SOURCE_CHANGED');
+    assert.equal(result.sourceIntegrity, 'CHANGED');
     assert.equal(result.proofSeal, null);
     assert.equal(result.cleanup.state, 'CLEANED');
   } finally {

@@ -27,11 +27,11 @@ The executor hides temporary paths, archive extraction, process containment, out
 
 The executor validates the subject and command at the boundary. It rejects install commands before isolation or command process creation. It then captures the source state, checks the host capability, creates temporary snapshot and scratch directories, reconstructs the committed tree, applies the binary tracked patch, and copies approved untracked bytes.
 
-The executor compares the reconstructed manifest with the subject before it calls the isolation adapter. The default Linux adapter mounts the snapshot and dependency tree read-only, mounts scratch space writable, clears the command environment, creates a network and process namespace with Bubblewrap, and starts the exact approved executable.
+The executor compares the reconstructed manifest with the subject before it calls the isolation adapter. The default Linux adapter creates a temporary root, mounts only the command runtime and required system directories, mounts the snapshot and dependency tree read-only at private sandbox paths, mounts scratch space writable, clears the command environment, creates a network and process namespace with Bubblewrap, and starts the exact approved executable. The host checkout is not mounted into the sandbox.
 
-The executor drains both output streams into bounded buffers. It retains at most 32 KiB from each end of a 64 KiB stream. It masks credential values, included untracked text, and private paths before it returns output. Binary output becomes a byte count and SHA-256 hash.
+The executor drains both output streams into bounded buffers. It retains at most 32 KiB from each end of a 64 KiB stream and clips retained text only at UTF-8 boundaries. It masks credential values, including short explicit environment values, included untracked text, and private paths before it returns output. Binary output becomes a byte count and SHA-256 hash.
 
-After the command exits, the executor recomputes the commit, tracked patch, Git status, proof manifest, and dependency digest. Any change returns `SOURCE_CHANGED` and discards the command result. A `finally`-equivalent cleanup step removes the temporary workspace for every path after workspace creation.
+After the command exits, the executor recomputes the commit, tracked patch, Git status, proof manifest, and dependency digest. The public inspector binds the dependency digest into the proof subject, so every command in a multi-command run is checked against the same dependency bytes. Any change returns `SOURCE_CHANGED` and discards the command result. A `finally`-equivalent cleanup step removes the temporary workspace for every path after workspace creation.
 
 ## Data shape
 

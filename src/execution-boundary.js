@@ -4,6 +4,9 @@ import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 
+import {canonicalizeJson} from './canonical-json.js';
+import {isAbsoluteCommandPath, isInstallCommand, isSafeCommandExecutable} from './command-policy.js';
+
 const MAX_STREAM_BYTES = 64 * 1024;
 const STREAM_HALF_BYTES = 32 * 1024;
 const MAX_RENDERED_EXCERPT_BYTES = 4 * 1024;
@@ -12,13 +15,6 @@ const MAX_TIMEOUT_SECONDS = 3600;
 const LOCAL_CHECKOUT = '<local-checkout>';
 const TEMPORARY_SNAPSHOT = '<temporary-snapshot>';
 const CLEANUP_NOT_REQUIRED = Object.freeze({state: 'NOT_REQUIRED'});
-
-const INSTALL_COMMANDS = new Map([
-  ['npm', new Set(['install', 'i', 'ci', 'update', 'uninstall'])],
-  ['pnpm', new Set(['add', 'install', 'update', 'remove', 'import'])],
-  ['yarn', new Set(['add', 'install', 'remove', 'up'])],
-  ['bun', new Set(['add', 'install', 'remove', 'update'])],
-]);
 
 const WARNING_ORDER = new Map([
   ['BINARY_OUTPUT_OMITTED', 0],
@@ -29,7 +25,7 @@ const WARNING_ORDER = new Map([
 /**
  * @typedef {{path: string, mode: number|string, sha256: string}} ManifestEntry
  * @typedef {{path: string, mode: number|string, content: Uint8Array|string, sha256?: string}} UntrackedFile
- * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[]}} DependencyTree
+ * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[], digest?: string}} DependencyTree
  * @typedef {{sourcePath: string, commitSha: string, trackedPatch?: Uint8Array|string, manifest: ManifestEntry[], untrackedFiles?: UntrackedFile[], untrackedPaths?: string[], dependencyTree?: DependencyTree, gitStatus: string}} ProofSubject
  * @typedef {{executable: string, args?: string[], cwd?: string, timeoutSeconds?: number, environmentPolicy?: {variables?: Record<string, string>, inherit?: string[]}}} ApprovedCommand
  * @typedef {{proofSubject: ProofSubject, approvedCommand: ApprovedCommand, command?: ApprovedCommand, redactionValues?: string[]}} ExecutionRequest
@@ -216,8 +212,8 @@ function validateRequest(request, platform) {
     throw new BoundaryError('UNSUPPORTED_PLATFORM', 'Proof execution is supported only on Linux.');
   }
   validateProofSubject(request.proofSubject);
-  validateCommand(request.approvedCommand);
-  if (request.command) validateCommand(request.command);
+  validateCommand(request.approvedCommand, request.proofSubject?.sourcePath);
+  if (request.command) validateCommand(request.command, request.proofSubject?.sourcePath);
 }
 
 /** @param {string} sourcePath @param {string} tempRoot */
@@ -290,6 +286,9 @@ function validateProofSubject(subject) {
       throw new BoundaryError('DEPENDENCIES_UNAVAILABLE', 'The dependency tree has no absolute source path.');
     }
     validateRelativePath(subject.dependencyTree.targetPath || 'node_modules', 'SNAPSHOT_MISMATCH');
+    if (subject.dependencyTree.digest !== undefined && !/^[0-9a-f]{64}$/i.test(subject.dependencyTree.digest)) {
+      throw new BoundaryError('DEPENDENCIES_UNAVAILABLE', 'The dependency tree digest is invalid.');
+    }
     for (const requiredPath of subject.dependencyTree.requiredPaths || []) {
       validateRelativePath(requiredPath, 'DEPENDENCIES_UNAVAILABLE');
     }
@@ -324,17 +323,26 @@ function validateUntrackedFile(entry) {
   }
 }
 
-/** @param {ApprovedCommand} command */
-function validateCommand(command) {
+/** @param {ApprovedCommand} command @param {string} [sourcePath] */
+function validateCommand(command, sourcePath) {
   if (!command || typeof command !== 'object' || typeof command.executable !== 'string' || command.executable.length === 0) {
     throw new BoundaryError('COMMAND_NOT_APPROVED', 'The approved command has no executable.');
   }
   if (command.executable.includes('\0') || command.executable.includes('\n')) {
     throw new BoundaryError('COMMAND_NOT_APPROVED', 'The executable contains invalid characters.');
   }
+  if (!isSafeCommandExecutable(command.executable)) {
+    throw new BoundaryError('COMMAND_NOT_APPROVED', 'The executable path is not an approved system command.');
+  }
+  if (isAbsoluteCommandPath(command.executable) && isPathInside(sourcePath, command.executable)) {
+    throw new BoundaryError('COMMAND_NOT_APPROVED', 'The executable cannot be loaded from the local checkout.');
+  }
   const args = command.args || [];
   if (!Array.isArray(args) || args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))) {
     throw new BoundaryError('COMMAND_NOT_APPROVED', 'The command arguments are invalid.');
+  }
+  if (args.some((arg) => isAbsoluteCommandPath(arg))) {
+    throw new BoundaryError('COMMAND_NOT_APPROVED', 'Command arguments cannot contain absolute paths.');
   }
   const cwd = command.cwd || '.';
   validateRelativePath(cwd, 'COMMAND_NOT_APPROVED');
@@ -373,16 +381,6 @@ function normalizeCommand(command) {
 /** @param {ApprovedCommand} left @param {ApprovedCommand} right */
 function sameCommand(left, right) {
   return JSON.stringify(normalizeCommand(left)) === JSON.stringify(normalizeCommand(right));
-}
-
-/** @param {ApprovedCommand} command */
-function isInstallCommand(command) {
-  const executable = path.basename(command.executable).toLowerCase();
-  if (['npx', 'pnpx', 'bunx'].includes(executable)) return true;
-  const args = command.args || [];
-  if (executable === 'yarn' && args.some((arg, index) => index > 0 && arg.toLowerCase() === 'dlx')) return true;
-  const actions = INSTALL_COMMANDS.get(executable);
-  return Boolean(actions && args.some((arg) => actions.has(arg.toLowerCase())));
 }
 
 /** @param {string} relative @param {string} code @param {boolean} [ordinaryOnly] */
@@ -425,6 +423,13 @@ function resolveInside(root, relative) {
     throw new BoundaryError('SNAPSHOT_MISMATCH', 'A path escaped the temporary snapshot.');
   }
   return resolved;
+}
+
+/** @param {string|undefined} root @param {string} candidate */
+function isPathInside(root, candidate) {
+  if (!root || !isAbsoluteCommandPath(candidate)) return false;
+  const relative = path.relative(path.resolve(root), path.resolve(candidate));
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
 /** @param {string} tempRoot */
@@ -653,8 +658,8 @@ async function verifySnapshotManifest(snapshotPath, expected) {
 
 /** @param {DependencyTree} dependencyTree */
 async function verifyDependencyTree(dependencyTree) {
-  const stat = await fs.stat(dependencyTree.sourcePath).catch(() => null);
-  if (!stat?.isDirectory()) {
+  const stat = await fs.lstat(dependencyTree.sourcePath).catch(() => null);
+  if (!stat?.isDirectory() || stat.isSymbolicLink()) {
     throw new BoundaryError('DEPENDENCIES_UNAVAILABLE', 'The existing dependency tree is unavailable.');
   }
   for (const requiredPath of dependencyTree.requiredPaths || []) {
@@ -712,7 +717,8 @@ function createBubblewrapIsolation(runtime) {
         '--die-with-parent',
         '--unshare-net',
         '--unshare-pid',
-        '--ro-bind', '/', '/',
+        '--tmpfs', '/',
+        ...(await systemMountArgs()),
         '--proc', '/proc',
         '--dev', '/dev',
         '--clearenv',
@@ -723,23 +729,27 @@ function createBubblewrapIsolation(runtime) {
         : {available: false, reason: 'Bubblewrap cannot establish the required network and process namespaces.'};
     },
     async execute(context) {
-      const target = resolveInside(context.snapshotPath, context.command.cwd);
+      const sandboxSnapshotPath = '/proof/snapshot';
+      const sandboxScratchPath = '/proof/scratch';
       const args = [
         '--die-with-parent',
         '--unshare-net',
         '--unshare-pid',
-        '--ro-bind', '/', '/',
+        '--tmpfs', '/',
+        ...(await systemMountArgs(context.sourcePath)),
         '--tmpfs', '/tmp',
         '--proc', '/proc',
         '--dev', '/dev',
-        '--ro-bind', context.snapshotPath, context.snapshotPath,
-        '--bind', context.scratchPath, context.scratchPath,
+        '--dir', '/proof',
+        '--bind', context.scratchPath, sandboxScratchPath,
+        '--ro-bind', context.snapshotPath, sandboxSnapshotPath,
         '--clearenv',
-        '--chdir', target,
-        '--setenv', 'PROVE_THE_TICKET_SCRATCH_DIR', context.scratchPath,
+        '--chdir', path.posix.join(sandboxSnapshotPath, context.command.cwd),
+        '--setenv', 'PROVE_THE_TICKET_SCRATCH_DIR', sandboxScratchPath,
       ];
       if (context.dependencyTree) {
-        const dependencyTarget = resolveInside(context.snapshotPath, context.dependencyTree.targetPath || 'node_modules');
+        resolveInside(context.snapshotPath, context.dependencyTree.targetPath || 'node_modules');
+        const dependencyTarget = path.posix.join(sandboxSnapshotPath, context.dependencyTree.targetPath || 'node_modules');
         args.push('--ro-bind', context.dependencyTree.sourcePath, dependencyTarget);
       }
       for (const [name, value] of Object.entries(context.environment)) {
@@ -749,6 +759,38 @@ function createBubblewrapIsolation(runtime) {
       return runBubblewrapProcess(runtime.bwrapBinary, args, context.command.timeoutSeconds, context.environment);
     },
   };
+}
+
+async function systemMountArgs(excludedPath) {
+  const args = [];
+  const systemPaths = ['/bin', '/lib', '/lib64', '/sbin', '/usr/bin', '/usr/lib', '/usr/lib64', '/usr/share/nodejs', '/usr/lib/node_modules'];
+  const mountPaths = [];
+  for (const systemPath of systemPaths) {
+    if (!await fs.stat(systemPath).catch(() => null)) continue;
+    if (excludedPath && pathsOverlap(systemPath, excludedPath)) continue;
+    mountPaths.push(systemPath);
+  }
+  const parents = new Set();
+  for (const systemPath of mountPaths) {
+    for (let current = path.dirname(systemPath); current !== '/'; current = path.dirname(current)) parents.add(current);
+  }
+  args.push(...[...parents].sort((left, right) => left.split('/').length - right.split('/').length).flatMap((directory) => ['--dir', directory]));
+  args.push(...mountPaths.flatMap((systemPath) => ['--ro-bind', systemPath, systemPath]));
+  const runtimePath = process.execPath;
+  if (!args.includes(runtimePath)) {
+    const runtimeDirectory = path.dirname(runtimePath);
+    const parents = [];
+    for (let current = runtimeDirectory; current !== path.dirname(current); current = path.dirname(current)) {
+      parents.unshift(current);
+    }
+    args.unshift(...parents.flatMap((directory) => ['--dir', directory]));
+    args.push('--ro-bind', runtimePath, runtimePath);
+  }
+  return args;
+}
+
+function pathsOverlap(left, right) {
+  return isPathInside(left, right) || isPathInside(right, left);
 }
 
 /** @param {string} executable @param {string[]} args @param {number} timeoutSeconds @param {Record<string, string>} environment */
@@ -866,7 +908,7 @@ function collectBoundedBytes(stream) {
         }
       }
       const retained = byteCount > MAX_STREAM_BYTES
-        ? Buffer.concat([Buffer.concat(head), tail])
+        ? Buffer.concat([trimUtf8End(Buffer.concat(head)), trimUtf8Start(tail)])
         : Buffer.concat(prefix);
       resolve({
         kind: 'bounded-capture',
@@ -883,9 +925,15 @@ function collectBoundedBytes(stream) {
 /** @param {Buffer} value */
 function captureBuffer(value) {
   const bounded = boundedBytes(value);
+  const retained = bounded.truncated
+    ? Buffer.concat([
+      trimUtf8End(value.subarray(0, STREAM_HALF_BYTES)),
+      trimUtf8Start(value.subarray(-STREAM_HALF_BYTES)),
+    ])
+    : bounded.retained;
   return {
     kind: 'bounded-capture',
-    retained: bounded.retained,
+    retained,
     byteCount: bounded.byteCount,
     sha256: hashBuffer(value),
     truncated: bounded.truncated,
@@ -899,7 +947,7 @@ function buildEnvironment(command, scratchPath) {
   for (const name of command.environmentPolicy.inherit) {
     if (process.env[name] !== undefined) environment[name] = process.env[name];
   }
-  environment.PATH = process.env.PATH || '/usr/local/bin:/usr/bin:/bin';
+  environment.PATH = `${path.dirname(process.execPath)}:/usr/local/bin:/usr/bin:/bin`;
   environment.HOME = scratchPath;
   environment.TMPDIR = '/tmp';
   for (const [name, value] of Object.entries(command.environmentPolicy.variables)) {
@@ -927,7 +975,7 @@ function collectRedactionValues(request) {
   const values = new Set(request.redactionValues || []);
   const command = request.command || request.approvedCommand;
   for (const value of Object.values(command.environmentPolicy?.variables || {})) {
-    if (value.length >= 4) values.add(value);
+    if (value.length > 0) values.add(value);
   }
   for (const name of command.environmentPolicy?.inherit || []) {
     if (process.env[name]) values.add(process.env[name]);
@@ -1028,7 +1076,31 @@ function limitExcerpt(text) {
   if (bytes.length <= MAX_RENDERED_EXCERPT_BYTES) return text;
   const marker = Buffer.from('\n<excerpt-omitted>\n');
   const sideBytes = Math.floor((MAX_RENDERED_EXCERPT_BYTES - marker.length) / 2);
-  return `${bytes.subarray(0, sideBytes).toString('utf8')}${marker.toString()}${bytes.subarray(-sideBytes).toString('utf8')}`;
+  const head = trimUtf8End(bytes.subarray(0, sideBytes));
+  const tail = trimUtf8Start(bytes.subarray(-sideBytes));
+  return `${head.toString('utf8')}${marker.toString()}${tail.toString('utf8')}`;
+}
+
+/** @param {Buffer} value */
+function trimUtf8End(value) {
+  for (let end = value.length; end >= Math.max(0, value.length - 4); end -= 1) {
+    try {
+      decodeUtf8(value.subarray(0, end));
+      return value.subarray(0, end);
+    } catch {}
+  }
+  return Buffer.alloc(0);
+}
+
+/** @param {Buffer} value */
+function trimUtf8Start(value) {
+  for (let start = 0; start <= Math.min(4, value.length); start += 1) {
+    try {
+      decodeUtf8(value.subarray(start));
+      return value.subarray(start);
+    } catch {}
+  }
+  return Buffer.alloc(0);
 }
 
 /** @param {string} text @param {{rootPath: string, snapshotPath: string, scratchPath: string}|null} workspace */
@@ -1049,7 +1121,11 @@ function sanitizeText(text, workspace) {
 
 /** @param {ApprovedCommand} command @param {{rootPath: string, snapshotPath: string, scratchPath: string}} workspace */
 function publicCommand(command, workspace) {
-  return JSON.parse(sanitizeText(JSON.stringify(command), workspace));
+  const publicValue = JSON.parse(sanitizeText(JSON.stringify(command), workspace));
+  publicValue.environmentPolicy.variables = Object.fromEntries(
+    Object.entries(publicValue.environmentPolicy.variables).map(([name, value]) => [name, value.length > 0 ? '<redacted>' : value]),
+  );
+  return publicValue;
 }
 
 /** @param {unknown} error @param {ExecutionRequest} request @param {{rootPath: string, snapshotPath: string, scratchPath: string}|null} workspace */
@@ -1063,6 +1139,7 @@ function makeErrorResult(error, request, workspace) {
     code: boundaryError.code,
     message: sanitizeText(boundaryError.message, privacyContext),
     ...(Object.keys(boundaryError.details).length > 0 ? {details: boundaryError.details} : {}),
+    sourceIntegrity: boundaryError.code === 'SOURCE_CHANGED' ? 'CHANGED' : 'UNKNOWN',
     overallStatus: null,
     proofSeal: null,
     warnings: [],
@@ -1079,7 +1156,8 @@ async function assertProofSubjectMatches(subject, state, mismatchCode) {
     sha256: entry.sha256.toLowerCase(),
   })).sort(compareManifestEntries);
   const expectedUntrackedPaths = (subject.untrackedPaths || (subject.untrackedFiles || []).map((entry) => entry.path)).sort();
-  if (state.commitSha !== subject.commitSha || state.trackedPatchSha256 !== patchHash || state.manifestDigest !== hashJson(expectedManifest) || state.status !== subject.gitStatus || JSON.stringify(state.untrackedPaths) !== JSON.stringify(expectedUntrackedPaths)) {
+  const expectedDependencyDigest = subject.dependencyTree?.digest;
+  if (state.commitSha !== subject.commitSha || state.trackedPatchSha256 !== patchHash || state.manifestDigest !== hashJson(expectedManifest) || state.status !== subject.gitStatus || JSON.stringify(state.untrackedPaths) !== JSON.stringify(expectedUntrackedPaths) || expectedDependencyDigest !== undefined && state.dependencyDigest !== expectedDependencyDigest.toLowerCase()) {
     throw new BoundaryError(mismatchCode, 'The source checkout does not match the fingerprinted proof subject.');
   }
 }
@@ -1113,23 +1191,11 @@ function hashBuffer(value) {
 
 /** @param {unknown} value */
 function hashJson(value) {
-  return hashBuffer(Buffer.from(canonicalJson(value)));
-}
-
-/** @param {unknown} value */
-function canonicalJson(value) {
-  if (value === null) return 'null';
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) throw new BoundaryError('INTERNAL_EXECUTION_ERROR', 'Cannot canonicalize a non-finite number.');
-    return JSON.stringify(value);
+  try {
+    return hashBuffer(Buffer.from(canonicalizeJson(value), 'utf8'));
+  } catch {
+    throw new BoundaryError('INTERNAL_EXECUTION_ERROR', 'Cannot canonicalize this value.');
   }
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-  }
-  throw new BoundaryError('INTERNAL_EXECUTION_ERROR', 'Cannot canonicalize this value.');
 }
 
 /** @param {Buffer} value */
@@ -1175,7 +1241,9 @@ function deduplicateWarnings(warnings) {
   const unique = new Map();
   for (const warning of warnings) unique.set(`${warning.code}:${warning.stream || ''}`, warning);
   return [...unique.values()].sort((left, right) => {
-    const codeOrder = (WARNING_ORDER.get(left.code) || 99) - (WARNING_ORDER.get(right.code) || 99);
-    return codeOrder || compareStrings(left.stream || '', right.stream || '');
+    const codeOrder = (WARNING_ORDER.get(left.code) ?? 99) - (WARNING_ORDER.get(right.code) ?? 99);
+    return codeOrder || compareStrings(left.stream || '', right.stream || '')
+      || compareStrings(left.reason || '', right.reason || '')
+      || compareStrings(left.path || '', right.path || '');
   });
 }

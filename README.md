@@ -57,9 +57,11 @@ must approve the metadata-only preview before eligible contents are read.
 
 The plan contains the exact commands and their criterion mappings. The default
 timeout is 300 seconds. Callers may set a timeout from 1 through 3,600 seconds.
-The boundary rejects dependency installation, denies network access, keeps the
-checkout and dependencies read-only, and gives the command a separate scratch
-directory through `PROVE_THE_TICKET_SCRATCH_DIR`.
+The boundary rejects dependency installation, including `yarn dlx`, before it
+creates a process. It denies network access, keeps the reconstructed checkout
+and dependency tree read-only, rejects unrelated absolute executable and
+argument paths, and gives the command a separate scratch directory through
+`PROVE_THE_TICKET_SCRATCH_DIR`.
 
 ## Results
 
@@ -78,9 +80,11 @@ trustworthy command result exists. Those errors return no overall status and no
 proof seal.
 
 The proof card and JSON replace the exact local checkout and temporary snapshot
-paths with stable placeholders. Output excerpts are bounded and masked. They
-do not contribute to the proof seal, so timestamps, durations, output text, and
-formatting changes do not change the seal.
+paths with stable placeholders. Explicit environment values, credential-shaped
+text, secret-like untracked files, and private paths are redacted before they
+are returned. Output excerpts have fixed byte limits and are clipped at UTF-8
+boundaries. They do not contribute to the proof seal, so timestamps, durations,
+output text, and formatting changes do not change the seal.
 
 For a local Rote integration or a test, `createIssueProofPlay` provides the
 same `run(input)` entry point with controlled GitHub, checkout, confirmation,
@@ -105,6 +109,12 @@ signal, timeout, source-integrity, network, and cleanup facts. The snapshot and
 existing dependency tree are read-only. The command's working directory is
 repository-relative and its arguments stay separate from the executable.
 
+The boundary never mounts the host checkout. It mounts only the runtime and
+required system directories, then mounts the reconstructed snapshot and the
+existing dependency tree at private sandbox paths. The dependency tree's digest
+is checked before and after the run, including between commands in one proof
+run.
+
 The execution-boundary design is documented in
 [`docs/architecture/execution-boundary.md`](docs/architecture/execution-boundary.md).
 The public workflow design is documented in
@@ -120,9 +130,10 @@ npm test
 ```
 
 The tests cover the public success path, dirty tracked reconstruction, binary
-patches, safe-untracked preview, approval, and limits, secret-path exclusions,
+patches, safe-untracked preview, approval and limits, secret-path exclusions,
 lockfile selection, ordered criteria and checked metadata, shared and unmapped
 command mappings, repeated plan approval after edits, nonzero and signal
 outcomes, independent progress, timeouts, missing dependencies, policy
-rejection, freshness changes, output privacy, stable seals, and the real
-Bubblewrap path when the host provides the required Linux capabilities.
+rejection, freshness changes, output privacy, stable seals, RFC 8785 number and
+serialization vectors, and the real Bubblewrap path when the host provides the
+required Linux capabilities.

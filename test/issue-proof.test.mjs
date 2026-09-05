@@ -329,6 +329,13 @@ test('preserves command identities when command order changes', async () => {
     assert.equal(first.evidencePlan.commands[0].id, second.evidencePlan.commands[1].id);
     assert.equal(first.evidencePlan.commands[1].id, second.evidencePlan.commands[0].id);
     assert.equal(first.evidencePlan.commands[0].id, first.evidencePlan.commands[1].id);
+
+    const changedEnvironment = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {...firstCommand, environmentPolicy: {variables: {TEST_VALUE: 'changed'}}},
+    }, successfulOptions());
+    assert.notEqual(changedEnvironment.evidencePlan.commands[0].id, first.evidencePlan.commands[0].id);
   } finally {
     await remove(fixture.root);
   }
@@ -764,6 +771,73 @@ test('supports tracked dirty checkouts and rejects competing lockfiles', async (
     assert.equal(result.code, 'LOCKFILE_SELECTION_REQUIRED');
   } finally {
     await remove(lockfiles.root);
+  }
+});
+
+test('binds the existing dependency tree to the complete proof run', async () => {
+  const fixture = await createFixture();
+  const dependencyPath = path.join(fixture.root, 'node_modules/package.json');
+  try {
+    await fs.writeFile(path.join(fixture.root, '.gitignore'), 'node_modules/\n');
+    await git(fixture.root, ['add', '.gitignore']);
+    await git(fixture.root, ['commit', '-qm', 'ignore dependencies']);
+    await fs.mkdir(path.dirname(dependencyPath), {recursive: true});
+    await fs.writeFile(dependencyPath, '{"name":"fixture-dependency"}\n');
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async () => {
+          await fs.writeFile(dependencyPath, '{"name":"mutated-dependency"}\n');
+          return processOutcome();
+        },
+      }},
+    }));
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'SOURCE_CHANGED');
+    assert.equal(result.sourceIntegrity, 'CHANGED');
+    assert.equal(result.cleanup.state, 'NOT_REQUIRED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('redacts short explicit command environment values in the public artifact', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)'], environmentPolicy: {variables: {TOKEN: 'x'}}},
+    }, successfulOptions({
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async () => outcomeWithOutput('x\n'),
+      }},
+    }));
+    assert.equal(JSON.stringify(result).includes('x\n'), false);
+    assert.match(JSON.stringify(result), /<redacted>/);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('redacts short explicit values from public execution errors', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)'], environmentPolicy: {variables: {TOKEN: 'x'}}},
+    }, successfulOptions({
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async () => { throw new Error('x'); },
+      }},
+    }));
+    assert.equal(result.code, 'INTERNAL_EXECUTION_ERROR');
+    assert.equal(result.message, '<redacted>');
+  } finally {
+    await remove(fixture.root);
   }
 });
 

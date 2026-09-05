@@ -62,7 +62,7 @@ shareable JSON. An incomplete fingerprint is a qualified run and forces
 `INCOMPLETE`; snapshot, unsupported-shape, freshness, or isolation failures
 remain run errors with no status or seal.
 
-Criteria, fingerprints, plans, and seal facts use canonical JSON before hashing.
+Criteria, fingerprints, plans, and seal facts use one strict RFC 8785 canonical JSON serializer before hashing; invalid Unicode, sparse arrays, unsupported values, and non-finite numbers are rejected.
 The seal projection includes only stable proof facts. Output excerpts,
 timestamps, durations, run IDs, formatting, and filesystem paths stay outside
 the seal. Rendering sanitizes checkout and temporary paths and never includes
