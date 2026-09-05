@@ -1,12 +1,30 @@
 # prove-the-ticket
 
-`prove-the-ticket` checks one public GitHub issue against one matching local Node
-checkout and returns a proof card. It reads the issue anonymously, asks the user
-to confirm the existing acceptance criteria, previews non-ignored untracked paths
-before any content access, asks for approval of an independent verification
-command plan, and runs every command through the isolated execution boundary from
-issue #2.
-The workflow does not write to GitHub.
+## What it does
+
+`prove-the-ticket` checks a public GitHub issue against its matching local Node
+checkout. It returns versioned JSON, a proof card, and a deterministic proof
+seal.
+
+## Why it exists
+
+A passing command is not enough to prove a ticket. The issue, checkout, command
+plan, and execution result must all refer to the same code state. The Play keeps
+those facts together and refuses to publish a result when it cannot verify them.
+
+## How it works
+
+1. Reads the issue anonymously and keeps its existing acceptance criteria.
+2. Confirms the criteria and previews non-ignored untracked paths before reading
+   eligible file contents.
+3. Matches the issue repository to one local Git remote.
+4. Presents the independent verification commands and their criterion mappings
+   for approval.
+5. Rebuilds the clean or dirty proof subject in a temporary snapshot.
+6. Runs each approved command inside the Linux isolation boundary.
+7. Rechecks the issue, checkout, and dependencies before creating the result.
+
+The workflow reads GitHub but does not write comments or change issues.
 
 ## Public issue proof
 
