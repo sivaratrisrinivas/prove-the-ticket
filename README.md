@@ -52,15 +52,19 @@ Binary output is represented by its size and hash.
 
 ## Public Community Play
 
-The release package in [`rote/prove-the-ticket`](rote/prove-the-ticket) is the
-public Rote Play wrapper for the 0.1 implementation. It accepts:
+Version 0.1 is published as the pinned Community Play
+[`prove-ticket/prove-the-ticket@0.1.0`](https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.0).
+It reads one public GitHub issue and checks the matching local Node checkout.
+It returns a proof card and a stable proof seal.
+
+The Play accepts:
 
 - `issue_url`: a full public GitHub issue URL;
 - `checkout_path`: an absolute path to the local checkout;
 - `confirm_criteria=yes`: explicit human confirmation of the extracted criteria;
 - `approve_plan=yes`: explicit human approval of the complete command plan.
 
-Run the local package with:
+Run the local package:
 
 ```sh
 rote play run rote/prove-the-ticket/main.ts \
@@ -70,27 +74,47 @@ rote play run rote/prove-the-ticket/main.ts \
   approve_plan=yes
 ```
 
-The public card discloses that 0.1 supports ordinary-file Node checkouts on
-capability-validated Linux only, reads public issues anonymously, denies network
-access to verification commands, forbids dependency installation, and performs
-no GitHub write. It also names the unsupported post-0.1 capabilities rather
-than implying they are available.
+Run the published package:
 
-The wrapper imports the implementation from the supplied checkout, so the
-pinned Play remains an inspectable runner for the exact local source being
-verified. Its shareable output contains the privacy-safe proof result only;
-the local checkout path and temporary snapshot paths are not rendered.
+```sh
+rote play run https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.0 \
+  issue_url=https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6 \
+  checkout_path="$PWD" \
+  confirm_criteria=yes \
+  approve_plan=yes \
+  --yes
+```
+
+Use `rote play inspect` before running the published package. Rote shows the
+inputs, access, effects, and package digest before execution.
+
+Version 0.1 supports ordinary-file Node checkouts on capability-validated Linux
+only. It reads public issues anonymously. Verification commands have no
+external network and cannot install dependencies. The Play performs no GitHub
+write. The public card also lists the features that are not part of 0.1.
+
+The package loads `src/index.js` from the checkout you pass. That keeps the run
+tied to the source under test instead of embedding a second implementation.
+The shareable result contains the privacy-safe proof only. It does not render
+the local checkout path, temporary snapshot paths, credentials, or untracked
+file contents.
+
+The 0.1 release commit is
+`35993ac8ce41eebc75d44f267d65f736f77ec694`. Its Community archive digest is
+`sha256:3ec584f218983b28d46280c799df99ff3d022b25b3f9c31308967f40d370d8d9`.
+The complete release record is in
+[issue #8](https://github.com/sivaratrisrinivas/prove-the-ticket/issues/8).
 
 ## Self-proof evidence
 
-Issue #7 is complete. At commit
-`d306af34ceb6391bbabf93bf05c9aa45950a624b`, the Play proved all 20 criteria
-from completed issue #6.
+The original self-proof for issue #7 is retained in
+[`evidence/issue-7`](evidence/issue-7). It records the proof of all 20
+criteria from completed issue #6 at the earlier implementation commit.
 
-The run used two approved commands, `npm run check` and `npm test`, through the
-anonymous public GitHub adapter and the production Linux boundary. All 71 tests
-passed with no skips. The retained JSON, proof card, source-integrity record,
-and proof seal are in [`evidence/issue-7`](evidence/issue-7).
+The 0.1 Community release was then verified from the release commit. The
+pinned Play read issue #6 anonymously and ran `npm run check` and `npm test`
+through the Linux isolation boundary. All 73 tests passed, all 20 issue
+criteria were `PROVED`, and the overall result was `PROVED`.
 
 ## Verification
 
