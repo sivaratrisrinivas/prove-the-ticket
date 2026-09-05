@@ -1,0 +1,170 @@
+Proof card
+Ticket: sivaratrisrinivas/prove-the-ticket#6
+Criteria hash: 94333f969dd98369e327983339a2ffd6b97dfc28ab45b0c3df9de4e321527953
+Code fingerprint: 5d46d9578c86897c77e92833c206ee6c7bc716bea751bdf735c3f85a254c0002
+Fingerprint completeness: COMPLETE
+Plan hash: fa7d7179e166bd02275728cc4a1b3f23518c7e47206a2170dff42c4121364a78
+Environment: linux 6.18.33.2-microsoft-standard-WSL2, x64
+Criterion criterion-1: PROVED The integrated Play supports multiple explicit criteria and independent commands against clean, tracked-dirty, and approved-untracked proof subjects.
+Criterion criterion-2: PROVED The shareable JSON field names, enum values, nullability, ordering, and schema version form a documented compatibility contract.
+Criterion criterion-3: PROVED Digest inputs use RFC 8785 canonical JSON.
+Criterion criterion-4: PROVED The code fingerprint contains no execution-environment field.
+Criterion criterion-5: PROVED The proof seal contains the stable fields listed in parent issue #1 and no other fields.
+Criterion criterion-6: PROVED Equivalent proof subjects, approved plans, environments, and outcomes produce identical JSON facts and proof seals apart from documented presentation timestamps and durations.
+Criterion criterion-7: PROVED Changes to criteria, fingerprint, plan, stable environment, command outcome, criterion status, overall status, or material warning code change the seal.
+Criterion criterion-8: PROVED Stdout, stderr, timestamps, durations, run IDs, absolute paths, temporary paths, and formatting changes do not change the seal.
+Criterion criterion-9: PROVED Exact checkout and snapshot paths are absent from JSON, cards, seals, warnings, and errors.
+Criterion criterion-10: PROVED Credential fixtures are rendered only as `<redacted>`.
+Criterion criterion-11: PROVED No untracked-file content appears in a persisted artifact.
+Criterion criterion-12: PROVED Text output limits, proof-card excerpt limits, binary-output replacement, and warning codes match parent issue #1 exactly.
+Criterion criterion-13: PROVED `FINGERPRINT_INCOMPLETE`, `OUTPUT_TRUNCATED`, `VALUE_REDACTED`, and `BINARY_OUTPUT_OMITTED` appear as stable codes rather than inferred prose.
+Criterion criterion-14: PROVED Run errors produce no overall status or seal.
+Criterion criterion-15: PROVED The complete Play-run seam covers one composed clean run, one composed dirty run, equivalent repeats, changed proof facts, masked output, truncated output, binary output, incomplete fingerprint, policy failure, and source mutation.
+Criterion criterion-16: PROVED A traceability table maps every mandatory 0.1 parent requirement to an acceptance test in #2, #3, #4, or #5, or to a composed assertion in this ticket.
+Criterion criterion-17: PROVED If traceability finds missing behavior or missing tests, record the exact gap and create a separate `ready-for-agent` gap ticket with the appropriate native blocking relationship.
+Criterion criterion-18: PROVED This ticket stops and remains blocked until every such gap ticket is closed.
+Criterion criterion-19: PROVED This ticket must not absorb or implement missing feature behavior itself.
+Criterion criterion-20: PROVED No criteria generation, command graph, output extraction, static evidence, manual evidence, GitHub comment, private-repository, non-Node, or cross-run reuse behavior is added.
+Command command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582: npm run check (EXITED 0)
+stdout: 
+> prove-the-ticket@0.1.0 check
+> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs
+
+
+Command command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda: npm test (EXITED 0)
+stdout: 
+> prove-the-ticket@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: serializes RFC 8785 number and literal examples
+ok 1 - serializes RFC 8785 number and literal examples
+  ---
+  duration_ms: 3.1378
+  ...
+# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest
+ok 2 - matches the RFC 8785 composite serialization and UTF-8 digest
+  ---
+  duration_ms: 2.819
+  ...
+# Subtest: matches every finite RFC 8785 Appendix B number vector
+ok 3 - matches every finite RFC 8785 Appendix B number vector
+  ---
+  duration_ms: 1.6384
+  ...
+# Subtest: sorts object names by UTF-16 code units without changing strings
+ok 4 - sorts object names by UTF-16 code units without changing strings
+  ---
+  duration_ms: 0.791
+  ...
+# Subtest: rejects values outside the I-JSON data model
+ok 5 - rejects values outside the I-JSON data model
+  ---
+  duration_ms: 1.5552
+  ...
+# Subtest: allows valid supplementary characters and repeated references
+ok 6 - allows valid supplementary characters and repeated references
+  ---
+  duration_ms: 0.4695
+  ...
+# Subtest: hashes canonical UTF-8 bytes
+ok 7 - hashes canonical UTF-8 bytes
+  ---
+  duration_ms: 0.8135
+  ...
+# Subtest: reconstructs a dirty proof subject and returns an exit outcome
+ok 8 - reconstructs a dirty proof subject and returns an exit outcome
+  ---
+  duration_ms: 262.860102
+  ...
+# Subtest: reconstructs the same fingerprint to a stable snapshot hash
+ok 9 - reconstructs the same fingerprint to a stable snapshot hash
+  ---
+  duration_ms: 355.637904
+  ...
+# Subtest: reconstructs a binary tracked patch
+ok 10 - reconstructs a binary tracked patch
+  ---
+  duration_ms: 226.536402
+  ...
+# Subtest: masks credentials and private paths before persistence
+ok 11 - masks credentials and private paths before persistence
+  ---
+  duration_ms: 191.001302
+  ...
+# Subtest: bounds text output while retaining both ends
+ok 12 - bounds text output while retaining both ends
+  ---
+  duration_ms: 190.559502
+  ...
+# Subtest: summarizes binary output without rendering it
+ok 13 - summarize
+<excerpt-omitted>
+path exclusions
+ok 60 - uses only the fixed 0.1 secret-path exclusions
+  ---
+  duration_ms: 388.926569
+  ...
+# Subtest: stops before later commands after a pre-result run error
+ok 61 - stops before later commands after a pre-result run error
+  ---
+  duration_ms: 248.803244
+  ...
+# Subtest: qualifies a proof when temporary-workspace cleanup fails
+ok 62 - qualifies a proof when temporary-workspace cleanup fails
+  ---
+  duration_ms: 342.34036
+  ...
+# Subtest: enforces the aggregate safe-untracked limit without reading excluded content
+ok 63 - enforces the aggregate safe-untracked limit without reading excluded content
+  ---
+  duration_ms: 1254.041321
+  ...
+# Subtest: rejects unsupported untracked shapes before planning or execution
+ok 64 - rejects unsupported untracked shapes before planning or execution
+  ---
+  duration_ms: 190.041634
+  ...
+# Subtest: fingerprints a changed selected lockfile
+ok 65 - fingerprints a changed selected lockfile
+  ---
+  duration_ms: 472.678283
+  ...
+# Subtest: supports tracked dirty checkouts and rejects competing lockfiles
+ok 66 - supports tracked dirty checkouts and rejects competing lockfiles
+  ---
+  duration_ms: 469.853383
+  ...
+# Subtest: binds the existing dependency tree to the complete proof run
+ok 67 - binds the existing dependency tree to the complete proof run
+  ---
+  duration_ms: 297.405339
+  ...
+# Subtest: preserves cleanup for a dependency policy error after fingerprinting
+ok 68 - preserves cleanup for a dependency policy error after fingerprinting
+  ---
+  duration_ms: 338.329328
+  ...
+# Subtest: redacts short explicit command environment values in the public artifact
+ok 69 - redacts short explicit command environment values in the public artifact
+  ---
+  duration_ms: 296.982924
+  ...
+# Subtest: redacts short explicit values from public execution errors
+ok 70 - redacts short explicit values from public execution errors
+  ---
+  duration_ms: 250.078221
+  ...
+1..70
+# tests 70
+# suites 0
+# pass 70
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18463.531876
+
+Overall: PROVED
+Rerun checkout: <local-checkout>
+Proof seal: sha256-v1:15b8ce105145194c5d00249a665a09f297644047c2960d13f1ca4b001adaccc9

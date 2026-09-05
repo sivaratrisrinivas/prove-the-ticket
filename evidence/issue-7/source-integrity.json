@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "demonstratedCommit": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+  "before": {
+    "commitSha": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+    "gitStatus": "",
+    "gitStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceBytesSha256": "c6b5c7fdbdb981ced2251b69a7245da109814ada6e5eabadd7b5d3e379a80804",
+    "trackedFileCount": 19,
+    "dependency": {
+      "present": false,
+      "digest": null
+    }
+  },
+  "after": {
+    "commitSha": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+    "gitStatus": "",
+    "gitStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceBytesSha256": "c6b5c7fdbdb981ced2251b69a7245da109814ada6e5eabadd7b5d3e379a80804",
+    "trackedFileCount": 19,
+    "dependency": {
+      "present": false,
+      "digest": null
+    }
+  },
+  "comparisons": {
+    "commitSha": true,
+    "gitStatus": true,
+    "gitStatusSha256": true,
+    "trackedPatchSha256": true,
+    "sourceBytesSha256": true,
+    "trackedFileCount": true,
+    "dependency": true
+  },
+  "matched": true,
+  "proofSubjectFingerprint": {
+    "commitSha": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+    "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dirtyFiles": [],
+    "untrackedFiles": [],
+    "lockfile": {
+      "path": null,
+      "sha256": null
+    },
+    "completeness": "COMPLETE",
+    "digest": "5d46d9578c86897c77e92833c206ee6c7bc716bea751bdf735c3f85a254c0002"
+  },
+  "observedResultSourceIntegrity": "UNCHANGED"
+}

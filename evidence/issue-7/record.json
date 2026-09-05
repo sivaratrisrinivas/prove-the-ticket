@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "repository": "sivaratrisrinivas/prove-the-ticket",
+  "issueNumber": 6,
+  "demonstratedCommit": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+  "overallStatus": "PROVED",
+  "proofSeal": "sha256-v1:15b8ce105145194c5d00249a665a09f297644047c2960d13f1ca4b001adaccc9",
+  "verificationTime": "2026-09-05T06:26:25.821Z",
+  "approvedCommands": [
+    "npm run check",
+    "npm test"
+  ],
+  "humanApprovals": {
+    "criteria": "CONFIRMED",
+    "commandPlan": "APPROVED"
+  },
+  "approvalCallbackCounts": {
+    "criteria": 1,
+    "commandPlan": 1
+  }
+}

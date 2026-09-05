@@ -1,0 +1,1802 @@
+{
+  "schemaVersion": "1.0",
+  "ticket": {
+    "tracker": "github",
+    "url": "https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6",
+    "owner": "sivaratrisrinivas",
+    "repository": "prove-the-ticket",
+    "number": 6,
+    "title": "Lock the complete artifact and safety contract",
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "text": "The integrated Play supports multiple explicit criteria and independent commands against clean, tracked-dirty, and approved-untracked proof subjects.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] The integrated Play supports multiple explicit criteria and independent commands against clean, tracked-dirty, and approved-untracked proof subjects."
+      },
+      {
+        "id": "criterion-2",
+        "text": "The shareable JSON field names, enum values, nullability, ordering, and schema version form a documented compatibility contract.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] The shareable JSON field names, enum values, nullability, ordering, and schema version form a documented compatibility contract."
+      },
+      {
+        "id": "criterion-3",
+        "text": "Digest inputs use RFC 8785 canonical JSON.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Digest inputs use RFC 8785 canonical JSON."
+      },
+      {
+        "id": "criterion-4",
+        "text": "The code fingerprint contains no execution-environment field.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] The code fingerprint contains no execution-environment field."
+      },
+      {
+        "id": "criterion-5",
+        "text": "The proof seal contains the stable fields listed in parent issue #1 and no other fields.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] The proof seal contains the stable fields listed in parent issue #1 and no other fields."
+      },
+      {
+        "id": "criterion-6",
+        "text": "Equivalent proof subjects, approved plans, environments, and outcomes produce identical JSON facts and proof seals apart from documented presentation timestamps and durations.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Equivalent proof subjects, approved plans, environments, and outcomes produce identical JSON facts and proof seals apart from documented presentation timestamps and durations."
+      },
+      {
+        "id": "criterion-7",
+        "text": "Changes to criteria, fingerprint, plan, stable environment, command outcome, criterion status, overall status, or material warning code change the seal.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Changes to criteria, fingerprint, plan, stable environment, command outcome, criterion status, overall status, or material warning code change the seal."
+      },
+      {
+        "id": "criterion-8",
+        "text": "Stdout, stderr, timestamps, durations, run IDs, absolute paths, temporary paths, and formatting changes do not change the seal.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Stdout, stderr, timestamps, durations, run IDs, absolute paths, temporary paths, and formatting changes do not change the seal."
+      },
+      {
+        "id": "criterion-9",
+        "text": "Exact checkout and snapshot paths are absent from JSON, cards, seals, warnings, and errors.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Exact checkout and snapshot paths are absent from JSON, cards, seals, warnings, and errors."
+      },
+      {
+        "id": "criterion-10",
+        "text": "Credential fixtures are rendered only as `<redacted>`.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Credential fixtures are rendered only as `<redacted>`."
+      },
+      {
+        "id": "criterion-11",
+        "text": "No untracked-file content appears in a persisted artifact.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] No untracked-file content appears in a persisted artifact."
+      },
+      {
+        "id": "criterion-12",
+        "text": "Text output limits, proof-card excerpt limits, binary-output replacement, and warning codes match parent issue #1 exactly.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Text output limits, proof-card excerpt limits, binary-output replacement, and warning codes match parent issue #1 exactly."
+      },
+      {
+        "id": "criterion-13",
+        "text": "`FINGERPRINT_INCOMPLETE`, `OUTPUT_TRUNCATED`, `VALUE_REDACTED`, and `BINARY_OUTPUT_OMITTED` appear as stable codes rather than inferred prose.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] `FINGERPRINT_INCOMPLETE`, `OUTPUT_TRUNCATED`, `VALUE_REDACTED`, and `BINARY_OUTPUT_OMITTED` appear as stable codes rather than inferred prose."
+      },
+      {
+        "id": "criterion-14",
+        "text": "Run errors produce no overall status or seal.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] Run errors produce no overall status or seal."
+      },
+      {
+        "id": "criterion-15",
+        "text": "The complete Play-run seam covers one composed clean run, one composed dirty run, equivalent repeats, changed proof facts, masked output, truncated output, binary output, incomplete fingerprint, policy failure, and source mutation.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] The complete Play-run seam covers one composed clean run, one composed dirty run, equivalent repeats, changed proof facts, masked output, truncated output, binary output, incomplete fingerprint, policy failure, and source mutation."
+      },
+      {
+        "id": "criterion-16",
+        "text": "A traceability table maps every mandatory 0.1 parent requirement to an acceptance test in #2, #3, #4, or #5, or to a composed assertion in this ticket.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] A traceability table maps every mandatory 0.1 parent requirement to an acceptance test in #2, #3, #4, or #5, or to a composed assertion in this ticket."
+      },
+      {
+        "id": "criterion-17",
+        "text": "If traceability finds missing behavior or missing tests, record the exact gap and create a separate `ready-for-agent` gap ticket with the appropriate native blocking relationship.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] If traceability finds missing behavior or missing tests, record the exact gap and create a separate `ready-for-agent` gap ticket with the appropriate native blocking relationship."
+      },
+      {
+        "id": "criterion-18",
+        "text": "This ticket stops and remains blocked until every such gap ticket is closed.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] This ticket stops and remains blocked until every such gap ticket is closed."
+      },
+      {
+        "id": "criterion-19",
+        "text": "This ticket must not absorb or implement missing feature behavior itself.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] This ticket must not absorb or implement missing feature behavior itself."
+      },
+      {
+        "id": "criterion-20",
+        "text": "No criteria generation, command graph, output extraction, static evidence, manual evidence, GitHub comment, private-repository, non-Node, or cross-run reuse behavior is added.",
+        "checked": false,
+        "nesting": 0,
+        "raw": "- [ ] No criteria generation, command graph, output extraction, static evidence, manual evidence, GitHub comment, private-repository, non-Node, or cross-run reuse behavior is added."
+      }
+    ]
+  },
+  "proofSubject": {
+    "criteriaHash": "94333f969dd98369e327983339a2ffd6b97dfc28ab45b0c3df9de4e321527953",
+    "codeFingerprint": {
+      "commitSha": "d688afecc7e7cca184506d65b7f092c0b7e37fcb",
+      "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dirtyFiles": [],
+      "untrackedFiles": [],
+      "lockfile": {
+        "path": null,
+        "sha256": null
+      },
+      "completeness": "COMPLETE",
+      "digest": "5d46d9578c86897c77e92833c206ee6c7bc716bea751bdf735c3f85a254c0002"
+    }
+  },
+  "evidencePlan": {
+    "hash": "fa7d7179e166bd02275728cc4a1b3f23518c7e47206a2170dff42c4121364a78",
+    "approval": "APPROVED",
+    "commands": [
+      {
+        "id": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+        "command": {
+          "executable": "npm",
+          "args": [
+            "run",
+            "check"
+          ],
+          "cwd": ".",
+          "timeoutSeconds": 300,
+          "environmentPolicy": {
+            "variables": {},
+            "inherit": []
+          }
+        },
+        "criteria": [
+          "criterion-1",
+          "criterion-2",
+          "criterion-3",
+          "criterion-4",
+          "criterion-5",
+          "criterion-6",
+          "criterion-7",
+          "criterion-8",
+          "criterion-9",
+          "criterion-10",
+          "criterion-11",
+          "criterion-12",
+          "criterion-13",
+          "criterion-14",
+          "criterion-15",
+          "criterion-16",
+          "criterion-17",
+          "criterion-18",
+          "criterion-19",
+          "criterion-20"
+        ]
+      },
+      {
+        "id": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+        "command": {
+          "executable": "npm",
+          "args": [
+            "test"
+          ],
+          "cwd": ".",
+          "timeoutSeconds": 300,
+          "environmentPolicy": {
+            "variables": {},
+            "inherit": []
+          }
+        },
+        "criteria": [
+          "criterion-1",
+          "criterion-2",
+          "criterion-3",
+          "criterion-4",
+          "criterion-5",
+          "criterion-6",
+          "criterion-7",
+          "criterion-8",
+          "criterion-9",
+          "criterion-10",
+          "criterion-11",
+          "criterion-12",
+          "criterion-13",
+          "criterion-14",
+          "criterion-15",
+          "criterion-16",
+          "criterion-17",
+          "criterion-18",
+          "criterion-19",
+          "criterion-20"
+        ]
+      }
+    ]
+  },
+  "proofRun": {
+    "executionEnvironment": {
+      "os": {
+        "family": "linux",
+        "version": "6.18.33.2-microsoft-standard-WSL2"
+      },
+      "architecture": "x64",
+      "git": {
+        "name": "git",
+        "version": "2.34.1"
+      },
+      "runtime": {
+        "name": "node",
+        "version": "22.14.0"
+      },
+      "packageManager": {
+        "name": "npm",
+        "version": "10.9.2"
+      }
+    },
+    "startedAt": "2026-09-05T06:26:02.799Z",
+    "endedAt": "2026-09-05T06:26:25.821Z",
+    "durationMs": 23022,
+    "runError": null,
+    "commands": [
+      {
+        "id": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+        "command": {
+          "executable": "npm",
+          "args": [
+            "run",
+            "check"
+          ],
+          "cwd": ".",
+          "timeoutSeconds": 300,
+          "environmentPolicy": {
+            "variables": {},
+            "inherit": []
+          }
+        },
+        "mapping": [
+          "criterion-1",
+          "criterion-2",
+          "criterion-3",
+          "criterion-4",
+          "criterion-5",
+          "criterion-6",
+          "criterion-7",
+          "criterion-8",
+          "criterion-9",
+          "criterion-10",
+          "criterion-11",
+          "criterion-12",
+          "criterion-13",
+          "criterion-14",
+          "criterion-15",
+          "criterion-16",
+          "criterion-17",
+          "criterion-18",
+          "criterion-19",
+          "criterion-20"
+        ],
+        "execution": {
+          "state": "EXITED",
+          "exitCode": 0,
+          "signal": null,
+          "startedAt": "2026-09-05T06:26:04.209Z",
+          "endedAt": "2026-09-05T06:26:05.693Z",
+          "durationMs": 1481,
+          "networkPolicy": "DENIED"
+        },
+        "output": {
+          "streams": {
+            "stdout": {
+              "binary": false,
+              "byteCount": 350,
+              "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+              "truncated": false
+            },
+            "stderr": {
+              "binary": false,
+              "byteCount": 0,
+              "excerpt": "",
+              "truncated": false
+            }
+          },
+          "warnings": []
+        }
+      },
+      {
+        "id": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+        "command": {
+          "executable": "npm",
+          "args": [
+            "test"
+          ],
+          "cwd": ".",
+          "timeoutSeconds": 300,
+          "environmentPolicy": {
+            "variables": {},
+            "inherit": []
+          }
+        },
+        "mapping": [
+          "criterion-1",
+          "criterion-2",
+          "criterion-3",
+          "criterion-4",
+          "criterion-5",
+          "criterion-6",
+          "criterion-7",
+          "criterion-8",
+          "criterion-9",
+          "criterion-10",
+          "criterion-11",
+          "criterion-12",
+          "criterion-13",
+          "criterion-14",
+          "criterion-15",
+          "criterion-16",
+          "criterion-17",
+          "criterion-18",
+          "criterion-19",
+          "criterion-20"
+        ],
+        "execution": {
+          "state": "EXITED",
+          "exitCode": 0,
+          "signal": null,
+          "startedAt": "2026-09-05T06:26:06.176Z",
+          "endedAt": "2026-09-05T06:26:25.450Z",
+          "durationMs": 19270,
+          "networkPolicy": "DENIED"
+        },
+        "output": {
+          "streams": {
+            "stdout": {
+              "binary": false,
+              "byteCount": 12907,
+              "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+              "truncated": false
+            },
+            "stderr": {
+              "binary": false,
+              "byteCount": 0,
+              "excerpt": "",
+              "truncated": false
+            }
+          },
+          "warnings": []
+        }
+      }
+    ],
+    "cleanup": {
+      "state": "CLEANED"
+    }
+  },
+  "criterionResults": [
+    {
+      "id": "criterion-1",
+      "text": "The integrated Play supports multiple explicit criteria and independent commands against clean, tracked-dirty, and approved-untracked proof subjects.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-2",
+      "text": "The shareable JSON field names, enum values, nullability, ordering, and schema version form a documented compatibility contract.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-3",
+      "text": "Digest inputs use RFC 8785 canonical JSON.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-4",
+      "text": "The code fingerprint contains no execution-environment field.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-5",
+      "text": "The proof seal contains the stable fields listed in parent issue #1 and no other fields.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-6",
+      "text": "Equivalent proof subjects, approved plans, environments, and outcomes produce identical JSON facts and proof seals apart from documented presentation timestamps and durations.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-7",
+      "text": "Changes to criteria, fingerprint, plan, stable environment, command outcome, criterion status, overall status, or material warning code change the seal.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-8",
+      "text": "Stdout, stderr, timestamps, durations, run IDs, absolute paths, temporary paths, and formatting changes do not change the seal.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-9",
+      "text": "Exact checkout and snapshot paths are absent from JSON, cards, seals, warnings, and errors.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-10",
+      "text": "Credential fixtures are rendered only as `<redacted>`.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-11",
+      "text": "No untracked-file content appears in a persisted artifact.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-12",
+      "text": "Text output limits, proof-card excerpt limits, binary-output replacement, and warning codes match parent issue #1 exactly.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-13",
+      "text": "`FINGERPRINT_INCOMPLETE`, `OUTPUT_TRUNCATED`, `VALUE_REDACTED`, and `BINARY_OUTPUT_OMITTED` appear as stable codes rather than inferred prose.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-14",
+      "text": "Run errors produce no overall status or seal.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-15",
+      "text": "The complete Play-run seam covers one composed clean run, one composed dirty run, equivalent repeats, changed proof facts, masked output, truncated output, binary output, incomplete fingerprint, policy failure, and source mutation.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-16",
+      "text": "A traceability table maps every mandatory 0.1 parent requirement to an acceptance test in #2, #3, #4, or #5, or to a composed assertion in this ticket.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-17",
+      "text": "If traceability finds missing behavior or missing tests, record the exact gap and create a separate `ready-for-agent` gap ticket with the appropriate native blocking relationship.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-18",
+      "text": "This ticket stops and remains blocked until every such gap ticket is closed.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-19",
+      "text": "This ticket must not absorb or implement missing feature behavior itself.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    },
+    {
+      "id": "criterion-20",
+      "text": "No criteria generation, command graph, output extraction, static evidence, manual evidence, GitHub comment, private-repository, non-Node, or cross-run reuse behavior is added.",
+      "checked": false,
+      "status": "PROVED",
+      "evidence": [
+        {
+          "type": "automated",
+          "commandId": "command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:04.209Z",
+            "endedAt": "2026-09-05T06:26:05.693Z",
+            "durationMs": 1481,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 350,
+                "excerpt": "\n> prove-the-ticket@0.1.0 check\n> node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs\n\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        },
+        {
+          "type": "automated",
+          "commandId": "command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda",
+          "execution": {
+            "state": "EXITED",
+            "exitCode": 0,
+            "signal": null,
+            "startedAt": "2026-09-05T06:26:06.176Z",
+            "endedAt": "2026-09-05T06:26:25.450Z",
+            "durationMs": 19270,
+            "networkPolicy": "DENIED"
+          },
+          "output": {
+            "streams": {
+              "stdout": {
+                "binary": false,
+                "byteCount": 12907,
+                "excerpt": "\n> prove-the-ticket@0.1.0 test\n> node --test\n\nTAP version 13\n# Subtest: serializes RFC 8785 number and literal examples\nok 1 - serializes RFC 8785 number and literal examples\n  ---\n  duration_ms: 3.1378\n  ...\n# Subtest: matches the RFC 8785 composite serialization and UTF-8 digest\nok 2 - matches the RFC 8785 composite serialization and UTF-8 digest\n  ---\n  duration_ms: 2.819\n  ...\n# Subtest: matches every finite RFC 8785 Appendix B number vector\nok 3 - matches every finite RFC 8785 Appendix B number vector\n  ---\n  duration_ms: 1.6384\n  ...\n# Subtest: sorts object names by UTF-16 code units without changing strings\nok 4 - sorts object names by UTF-16 code units without changing strings\n  ---\n  duration_ms: 0.791\n  ...\n# Subtest: rejects values outside the I-JSON data model\nok 5 - rejects values outside the I-JSON data model\n  ---\n  duration_ms: 1.5552\n  ...\n# Subtest: allows valid supplementary characters and repeated references\nok 6 - allows valid supplementary characters and repeated references\n  ---\n  duration_ms: 0.4695\n  ...\n# Subtest: hashes canonical UTF-8 bytes\nok 7 - hashes canonical UTF-8 bytes\n  ---\n  duration_ms: 0.8135\n  ...\n# Subtest: reconstructs a dirty proof subject and returns an exit outcome\nok 8 - reconstructs a dirty proof subject and returns an exit outcome\n  ---\n  duration_ms: 262.860102\n  ...\n# Subtest: reconstructs the same fingerprint to a stable snapshot hash\nok 9 - reconstructs the same fingerprint to a stable snapshot hash\n  ---\n  duration_ms: 355.637904\n  ...\n# Subtest: reconstructs a binary tracked patch\nok 10 - reconstructs a binary tracked patch\n  ---\n  duration_ms: 226.536402\n  ...\n# Subtest: masks credentials and private paths before persistence\nok 11 - masks credentials and private paths before persistence\n  ---\n  duration_ms: 191.001302\n  ...\n# Subtest: bounds text output while retaining both ends\nok 12 - bounds text output while retaining both ends\n  ---\n  duration_ms: 190.559502\n  ...\n# Subtest: summarizes binary output without rendering it\nok 13 - summarizes binary\n<excerpt-omitted>\npath exclusions\nok 60 - uses only the fixed 0.1 secret-path exclusions\n  ---\n  duration_ms: 388.926569\n  ...\n# Subtest: stops before later commands after a pre-result run error\nok 61 - stops before later commands after a pre-result run error\n  ---\n  duration_ms: 248.803244\n  ...\n# Subtest: qualifies a proof when temporary-workspace cleanup fails\nok 62 - qualifies a proof when temporary-workspace cleanup fails\n  ---\n  duration_ms: 342.34036\n  ...\n# Subtest: enforces the aggregate safe-untracked limit without reading excluded content\nok 63 - enforces the aggregate safe-untracked limit without reading excluded content\n  ---\n  duration_ms: 1254.041321\n  ...\n# Subtest: rejects unsupported untracked shapes before planning or execution\nok 64 - rejects unsupported untracked shapes before planning or execution\n  ---\n  duration_ms: 190.041634\n  ...\n# Subtest: fingerprints a changed selected lockfile\nok 65 - fingerprints a changed selected lockfile\n  ---\n  duration_ms: 472.678283\n  ...\n# Subtest: supports tracked dirty checkouts and rejects competing lockfiles\nok 66 - supports tracked dirty checkouts and rejects competing lockfiles\n  ---\n  duration_ms: 469.853383\n  ...\n# Subtest: binds the existing dependency tree to the complete proof run\nok 67 - binds the existing dependency tree to the complete proof run\n  ---\n  duration_ms: 297.405339\n  ...\n# Subtest: preserves cleanup for a dependency policy error after fingerprinting\nok 68 - preserves cleanup for a dependency policy error after fingerprinting\n  ---\n  duration_ms: 338.329328\n  ...\n# Subtest: redacts short explicit command environment values in the public artifact\nok 69 - redacts short explicit command environment values in the public artifact\n  ---\n  duration_ms: 296.982924\n  ...\n# Subtest: redacts short explicit values from public execution errors\nok 70 - redacts short explicit values from public execution errors\n  ---\n  duration_ms: 250.078221\n  ...\n1..70\n# tests 70\n# suites 0\n# pass 70\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 18463.531876\n",
+                "truncated": false
+              },
+              "stderr": {
+                "binary": false,
+                "byteCount": 0,
+                "excerpt": "",
+                "truncated": false
+              }
+            },
+            "warnings": []
+          }
+        }
+      ],
+      "rationale": "Every mapped command exited zero in the isolated execution boundary."
+    }
+  ],
+  "overallStatus": "PROVED",
+  "proofSeal": "sha256-v1:15b8ce105145194c5d00249a665a09f297644047c2960d13f1ca4b001adaccc9",
+  "rerunInputs": {
+    "issueUrl": "https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6",
+    "repository": {
+      "owner": "sivaratrisrinivas",
+      "name": "prove-the-ticket"
+    },
+    "checkoutPath": "<local-checkout>",
+    "criteriaHash": "94333f969dd98369e327983339a2ffd6b97dfc28ab45b0c3df9de4e321527953",
+    "codeFingerprintDigest": "5d46d9578c86897c77e92833c206ee6c7bc716bea751bdf735c3f85a254c0002",
+    "evidencePlanHash": "fa7d7179e166bd02275728cc4a1b3f23518c7e47206a2170dff42c4121364a78"
+  },
+  "warnings": []
+}
