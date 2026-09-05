@@ -1134,13 +1134,18 @@ function summarizeCleanup(classifications) {
   return cleanups[0];
 }
 
-function classifyExecution(result) {
+export function classifyExecution(result) {
   if (!result || typeof result !== 'object') return {kind: 'pre-result-error', code: 'INTERNAL_EXECUTION_ERROR', message: 'The execution boundary returned no result.'};
   if (result.kind === 'command-outcome') {
     if (result.execution?.state === 'EXITED' && result.execution.exitCode === 0) return {status: 'PROVED', outcome: result, rationale: 'The approved command exited zero in the isolated execution boundary.'};
     if (result.execution?.state === 'EXITED' || result.execution?.state === 'SIGNALED') return {status: 'FAILED', outcome: result, rationale: 'The approved command completed with a nonzero exit or terminating signal.'};
     if (result.execution?.state === 'TIMED_OUT' || result.code === 'COMMAND_TIMEOUT') return {status: 'UNVERIFIED', outcome: result, rationale: 'The approved command timed out or had no trustworthy outcome.'};
-    return {kind: 'pre-result-error', code: 'INTERNAL_EXECUTION_ERROR', message: 'The execution boundary returned an invalid command outcome.'};
+    return {
+      kind: 'pre-result-error',
+      code: 'INTERNAL_EXECUTION_ERROR',
+      message: 'The execution boundary returned an invalid command outcome.',
+      cleanup: result.cleanup,
+    };
   }
   if (result.kind === 'run-error' && POLICY_ERROR_CODES.has(result.code)) {
     return {

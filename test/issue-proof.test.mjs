@@ -9,8 +9,21 @@ import test from 'node:test';
 
 import {createIssueProofPlay, runIssueProof} from '../src/index.js';
 import {hashCanonicalJson} from '../src/canonical-json.js';
+import {classifyExecution} from '../src/issue-proof.js';
 
 const execFileAsync = promisify(execFile);
+
+test('preserves cleanup when a command outcome has an invalid execution state', () => {
+  const cleanup = {state: 'FAILED', code: 'INTERNAL_EXECUTION_ERROR', message: 'cleanup failed'};
+  const classification = classifyExecution({
+    kind: 'command-outcome',
+    execution: {state: 'INVALID'},
+    cleanup,
+  });
+
+  assert.equal(classification.kind, 'pre-result-error');
+  assert.deepEqual(classification.cleanup, cleanup);
+});
 
 test('runs one confirmed public issue through a clean checkout to a proof card', async () => {
   const fixture = await createFixture();
