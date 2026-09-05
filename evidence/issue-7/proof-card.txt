@@ -26,13 +26,13 @@ Criterion criterion-18: PROVED This ticket stops and remains blocked until every
 Criterion criterion-19: PROVED This ticket must not absorb or implement missing feature behavior itself.
 Criterion criterion-20: PROVED No criteria generation, command graph, output extraction, static evidence, manual evidence, GitHub comment, private-repository, non-Node, or cross-run reuse behavior is added.
 Command command-d2d209565952e4b74fd7a62036a0668bb2921af0b6b1f8197945e603a39df582: npm run check (EXITED 0)
-stdout: 
+stdout:
 > prove-the-ticket@0.1.0 check
 > node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs
 
 
 Command command-b99092409e0aae0e900a42082d122184cb20dba064a0d1a0c002bc7e83106bda: npm test (EXITED 0)
-stdout: 
+stdout:
 > prove-the-ticket@0.1.0 test
 > node --test
 
