@@ -1,19 +1,19 @@
 {
   "schemaVersion": "1.0",
-  "demonstratedCommit": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+  "demonstratedCommit": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
   "before": {
-    "commitSha": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+    "commitSha": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
     "gitStatus": "",
     "gitStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "sourceBytesSha256": "4ed688fc05c1923ae13020fe799cb8ab31c67321bcc75a1177f607530970cbb1",
+    "sourceBytesSha256": "e6f167b1e89d88420bf84187e67e3626b5c74d035e05da6209cd471efe30c51e",
     "trackedFileCount": 24,
     "dependency": {
       "present": false,
       "digest": null
     },
     "fingerprintInputs": {
-      "commitSha": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+      "commitSha": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
       "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "dirtyFiles": [],
       "untrackedFiles": [],
@@ -23,21 +23,21 @@
       },
       "completeness": "COMPLETE"
     },
-    "fingerprintDigest": "41de48e62d88111f95fdfd884e6759606363fbe5621e1310e82961c60c4065c2"
+    "fingerprintDigest": "fe1929a968958ce756c0bfcf043031f5c84c6307538236914db3c544d26a971a"
   },
   "after": {
-    "commitSha": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+    "commitSha": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
     "gitStatus": "",
     "gitStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "sourceBytesSha256": "4ed688fc05c1923ae13020fe799cb8ab31c67321bcc75a1177f607530970cbb1",
+    "sourceBytesSha256": "e6f167b1e89d88420bf84187e67e3626b5c74d035e05da6209cd471efe30c51e",
     "trackedFileCount": 24,
     "dependency": {
       "present": false,
       "digest": null
     },
     "fingerprintInputs": {
-      "commitSha": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+      "commitSha": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
       "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "dirtyFiles": [],
       "untrackedFiles": [],
@@ -47,7 +47,7 @@
       },
       "completeness": "COMPLETE"
     },
-    "fingerprintDigest": "41de48e62d88111f95fdfd884e6759606363fbe5621e1310e82961c60c4065c2"
+    "fingerprintDigest": "fe1929a968958ce756c0bfcf043031f5c84c6307538236914db3c544d26a971a"
   },
   "comparisons": {
     "commitSha": true,
@@ -62,7 +62,7 @@
   },
   "matched": true,
   "proofSubjectFingerprint": {
-    "commitSha": "c3c994fdbf42811d64a11635d25d06697c6bbd5d",
+    "commitSha": "d306af34ceb6391bbabf93bf05c9aa45950a624b",
     "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "dirtyFiles": [],
     "untrackedFiles": [],
@@ -71,7 +71,7 @@
       "sha256": null
     },
     "completeness": "COMPLETE",
-    "digest": "41de48e62d88111f95fdfd884e6759606363fbe5621e1310e82961c60c4065c2"
+    "digest": "fe1929a968958ce756c0bfcf043031f5c84c6307538236914db3c544d26a971a"
   },
   "observedResultSourceIntegrity": "UNCHANGED"
 }

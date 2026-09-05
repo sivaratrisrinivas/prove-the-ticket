@@ -1,7 +1,7 @@
 # Issue #7 self-proof evidence
 
 This bundle records the public self-proof of completed issue #6 at commit
-`c3c994fdbf42811d64a11635d25d06697c6bbd5d`.
+`d306af34ceb6391bbabf93bf05c9aa45950a624b`.
 
 - `record.json` records the demonstrated commit, issue number, approvals,
   overall status, proof seal, and approved commands.

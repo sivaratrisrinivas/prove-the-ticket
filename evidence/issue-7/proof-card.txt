@@ -1,7 +1,7 @@
 Proof card
 Ticket: sivaratrisrinivas/prove-the-ticket#6
 Criteria hash: 94333f969dd98369e327983339a2ffd6b97dfc28ab45b0c3df9de4e321527953
-Code fingerprint: 41de48e62d88111f95fdfd884e6759606363fbe5621e1310e82961c60c4065c2
+Code fingerprint: fe1929a968958ce756c0bfcf043031f5c84c6307538236914db3c544d26a971a
 Fingerprint completeness: COMPLETE
 Plan hash: fa7d7179e166bd02275728cc4a1b3f23518c7e47206a2170dff42c4121364a78
 Environment: linux 6.18.33.2-microsoft-standard-WSL2, x64
@@ -40,131 +40,131 @@ TAP version 13
 # Subtest: serializes RFC 8785 number and literal examples
 ok 1 - serializes RFC 8785 number and literal examples
   ---
-  duration_ms: 3.791006
+  duration_ms: 5.2188
   ...
 # Subtest: matches the RFC 8785 composite serialization and UTF-8 digest
 ok 2 - matches the RFC 8785 composite serialization and UTF-8 digest
   ---
-  duration_ms: 4.210306
+  duration_ms: 5.2631
   ...
 # Subtest: matches every finite RFC 8785 Appendix B number vector
 ok 3 - matches every finite RFC 8785 Appendix B number vector
   ---
-  duration_ms: 2.180504
+  duration_ms: 4.7596
   ...
 # Subtest: sorts object names by UTF-16 code units without changing strings
 ok 4 - sorts object names by UTF-16 code units without changing strings
   ---
-  duration_ms: 0.588701
+  duration_ms: 1.0488
   ...
 # Subtest: rejects values outside the I-JSON data model
 ok 5 - rejects values outside the I-JSON data model
   ---
-  duration_ms: 2.085203
+  duration_ms: 6.182299
   ...
 # Subtest: allows valid supplementary characters and repeated references
 ok 6 - allows valid supplementary characters and repeated references
   ---
-  duration_ms: 0.750501
+  duration_ms: 0.7796
   ...
 # Subtest: hashes canonical UTF-8 bytes
 ok 7 - hashes canonical UTF-8 bytes
   ---
-  duration_ms: 0.903502
+  duration_ms: 1.1272
   ...
 # Subtest: reconstructs a dirty proof subject and returns an exit outcome
 ok 8 - reconstructs a dirty proof subject and returns an exit outcome
   ---
-  duration_ms: 320.406354
+  duration_ms: 377.41449
   ...
 # Subtest: reconstructs the same fingerprint to a stable snapshot hash
 ok 9 - reconstructs the same fingerprint to a stable snapshot hash
   ---
-  duration_ms: 393.382857
+  duration_ms: 536.386087
   ...
 # Subtest: reconstructs a binary tracked patch
 ok 10 - reconstructs a binary tracked patch
   ---
-  duration_ms: 241.130541
+  duration_ms: 418.01889
   ...
 # Subtest: masks credentials and private paths before persistence
 ok 11 - masks credentials and private paths before persistence
   ---
-  duration_ms: 204.76369
+  duration_ms: 433.409389
   ...
 # Subtest: bounds text output while retaining both ends
 ok 12 - bounds text output while retaining both ends
   ---
-  duration_ms: 243.939845
+  duration_ms: 351.687791
   ...
 # Subtest: summarizes binary output without rendering it
-ok
+ok 13 - summari
 <excerpt-omitted>
-path exclusions
+-path exclusions
 ok 61 - uses only the fixed 0.1 secret-path exclusions
   ---
-  duration_ms: 392.515455
+  duration_ms: 446.632788
   ...
 # Subtest: stops before later commands after a pre-result run error
 ok 62 - stops before later commands after a pre-result run error
   ---
-  duration_ms: 270.568239
+  duration_ms: 301.914793
   ...
 # Subtest: qualifies a proof when temporary-workspace cleanup fails
 ok 63 - qualifies a proof when temporary-workspace cleanup fails
   ---
-  duration_ms: 338.060248
+  duration_ms: 395.39049
   ...
 # Subtest: enforces the aggregate safe-untracked limit without reading excluded content
 ok 64 - enforces the aggregate safe-untracked limit without reading excluded content
   ---
-  duration_ms: 6676.784439
+  duration_ms: 2469.781536
   ...
 # Subtest: rejects unsupported untracked shapes before planning or execution
 ok 65 - rejects unsupported untracked shapes before planning or execution
   ---
-  duration_ms: 231.678927
+  duration_ms: 359.840491
   ...
 # Subtest: fingerprints a changed selected lockfile
 ok 66 - fingerprints a changed selected lockfile
   ---
-  duration_ms: 601.989269
+  duration_ms: 653.261783
   ...
 # Subtest: supports tracked dirty checkouts and rejects competing lockfiles
 ok 67 - supports tracked dirty checkouts and rejects competing lockfiles
   ---
-  duration_ms: 863.394199
+  duration_ms: 909.460679
   ...
 # Subtest: binds the existing dependency tree to the complete proof run
 ok 68 - binds the existing dependency tree to the complete proof run
   ---
-  duration_ms: 526.372161
+  duration_ms: 506.548791
   ...
 # Subtest: preserves cleanup for a dependency policy error after fingerprinting
 ok 69 - preserves cleanup for a dependency policy error after fingerprinting
   ---
-  duration_ms: 612.60677
+  duration_ms: 551.12269
   ...
 # Subtest: redacts short explicit command environment values in the public artifact
 ok 70 - redacts short explicit command environment values in the public artifact
   ---
-  duration_ms: 548.162663
+  duration_ms: 449.484392
   ...
 # Subtest: redacts short explicit values from public execution errors
 ok 71 - redacts short explicit values from public execution errors
   ---
-  duration_ms: 378.956744
+  duration_ms: 354.267494
   ...
 1..71
 # tests 71
 # suites 0
-# pass 70
+# pass 71
 # fail 0
 # cancelled 0
-# skipped 1
+# skipped 0
 # todo 0
-# duration_ms 30944.753268
+# duration_ms 24998.420143
 
 Overall: PROVED
 Rerun checkout: <local-checkout>
-Proof seal: sha256-v1:5438f209661f0b38920095dfae23bbfba0b295e6dce07c3800790b48c2d3a13e
+Proof seal: sha256-v1:872544e3d26caea3c7cd7ecb6f50dcae77ffc1e7c57f57e53e2258c1b0bbd8a6
