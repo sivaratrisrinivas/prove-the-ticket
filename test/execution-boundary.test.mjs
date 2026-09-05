@@ -465,6 +465,28 @@ test('runs the real Bubblewrap path when the host can provide it', async (t) => 
   }
 });
 
+test('runs a package-manager executable from the Node runtime directory', async (t) => {
+  if (process.platform !== 'linux') t.skip('Linux is required.');
+  const fixture = await createFixture();
+  const command = {
+    executable: 'npm',
+    args: ['--version'],
+    cwd: '.',
+    timeoutSeconds: 3,
+  };
+  try {
+    const result = await executeProofCommand({...fixture.request, approvedCommand: command, command});
+    if (result.code === 'ISOLATION_UNAVAILABLE') {
+      return t.skip('The host cannot establish Bubblewrap namespaces.');
+    }
+    assert.equal(result.kind, 'command-outcome');
+    assert.equal(result.execution.exitCode, 0);
+    assert.match(result.output.streams.stdout.excerpt, /^\d+\.\d+\.\d+\n$/);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('returns COMMAND_TIMEOUT for a real isolated process tree timeout', async (t) => {
   if (process.platform !== 'linux') t.skip('Linux is required.');
   const fixture = await createFixture();

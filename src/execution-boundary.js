@@ -776,17 +776,16 @@ async function systemMountArgs(excludedPath) {
     for (let current = path.dirname(systemPath); current !== '/'; current = path.dirname(current)) parents.add(current);
   }
   args.push(...[...parents].sort((left, right) => left.split('/').length - right.split('/').length).flatMap((directory) => ['--dir', directory]));
-  args.push(...mountPaths.flatMap((systemPath) => ['--ro-bind', systemPath, systemPath]));
-  const runtimePath = process.execPath;
-  if (!args.includes(runtimePath)) {
-    const runtimeDirectory = path.dirname(runtimePath);
+  const runtimeRoot = path.dirname(path.dirname(process.execPath));
+  if (!mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimeRoot))) {
     const parents = [];
-    for (let current = runtimeDirectory; current !== path.dirname(current); current = path.dirname(current)) {
+    for (let current = runtimeRoot; current !== path.dirname(current); current = path.dirname(current)) {
       parents.unshift(current);
     }
     args.unshift(...parents.flatMap((directory) => ['--dir', directory]));
-    args.push('--ro-bind', runtimePath, runtimePath);
+    args.push('--ro-bind', runtimeRoot, runtimeRoot);
   }
+  args.push(...mountPaths.flatMap((systemPath) => ['--ro-bind', systemPath, systemPath]));
   return args;
 }
 
