@@ -487,6 +487,24 @@ test('runs a package-manager executable from the Node runtime directory', async 
   }
 });
 
+test('fails closed when the Node runtime mount overlaps the checkout', async (t) => {
+  if (process.platform !== 'linux') t.skip('Linux is required.');
+  const runtimeRoot = path.dirname(path.dirname(process.execPath));
+  let fixture;
+  try {
+    fixture = await createFixture({basePath: runtimeRoot});
+  } catch {
+    return t.skip('The Node runtime directory is not writable for this fixture.');
+  }
+  try {
+    const result = await executeProofCommand(fixture.request);
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'ISOLATION_UNAVAILABLE');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('returns COMMAND_TIMEOUT for a real isolated process tree timeout', async (t) => {
   if (process.platform !== 'linux') t.skip('Linux is required.');
   const fixture = await createFixture();
@@ -631,8 +649,8 @@ async function snapshotHash(root) {
   return sha256(JSON.stringify(entries));
 }
 
-async function createFixture({dirty = false, binary = false} = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-test-'));
+async function createFixture({dirty = false, binary = false, basePath = os.tmpdir()} = {}) {
+  const root = await fs.mkdtemp(path.join(basePath, 'prove-ticket-test-'));
   await fs.mkdir(path.join(root, 'src'), {recursive: true});
   await fs.writeFile(path.join(root, 'src/message.txt'), 'clean\n');
   if (binary) await fs.writeFile(path.join(root, 'src/blob.bin'), Buffer.from([0, 1, 2, 3]));

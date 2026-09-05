@@ -776,14 +776,25 @@ async function systemMountArgs(excludedPath) {
     for (let current = path.dirname(systemPath); current !== '/'; current = path.dirname(current)) parents.add(current);
   }
   args.push(...[...parents].sort((left, right) => left.split('/').length - right.split('/').length).flatMap((directory) => ['--dir', directory]));
+  const runtimePath = process.execPath;
   const runtimeRoot = path.dirname(path.dirname(process.execPath));
-  if (!mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimeRoot))) {
+  const runtimeRootMounted = mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimeRoot));
+  const runtimePathMounted = mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimePath));
+  if (!runtimeRootMounted) {
+    if (excludedPath && pathsOverlap(runtimeRoot, excludedPath)) {
+      throw new BoundaryError('ISOLATION_UNAVAILABLE', 'The Node runtime mount would overlap the local checkout.');
+    }
     const parents = [];
     for (let current = runtimeRoot; current !== path.dirname(current); current = path.dirname(current)) {
       parents.unshift(current);
     }
     args.unshift(...parents.flatMap((directory) => ['--dir', directory]));
     args.push('--ro-bind', runtimeRoot, runtimeRoot);
+  } else if (!runtimePathMounted) {
+    if (excludedPath && pathsOverlap(runtimePath, excludedPath)) {
+      throw new BoundaryError('ISOLATION_UNAVAILABLE', 'The Node runtime executable overlaps the local checkout.');
+    }
+    args.push('--ro-bind', runtimePath, runtimePath);
   }
   args.push(...mountPaths.flatMap((systemPath) => ['--ro-bind', systemPath, systemPath]));
   return args;
