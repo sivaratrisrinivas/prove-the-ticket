@@ -211,6 +211,48 @@ test('fails closed for stale manifests and timeout values outside policy', async
   }
 });
 
+test('rejects unsupported checkout shapes with fixed subtypes before isolation', async () => {
+  await assertUnsupportedSubtype(async (root) => {
+    await fs.rm(path.join(root, 'src/message.txt'));
+    await fs.symlink('missing.txt', path.join(root, 'src/message.txt'));
+    await git(root, ['add', '-A']);
+    await git(root, ['commit', '-qm', 'tracked symlink']);
+  }, 'SYMLINK');
+
+  await assertUnsupportedSubtype(async (root) => {
+    const commitSha = (await git(root, ['rev-parse', 'HEAD'])).trim();
+    await git(root, ['update-index', '--add', '--cacheinfo', `160000,${commitSha},vendor/submodule`]);
+    await git(root, ['commit', '-qm', 'submodule']);
+  }, 'SUBMODULE');
+
+  await assertUnsupportedSubtype(async (root) => {
+    await fs.writeFile(path.join(root, '.gitattributes'), '*.lfs filter=lfs\n');
+    await fs.writeFile(path.join(root, 'asset.lfs'), 'pointer\n');
+    await git(root, ['add', '.gitattributes', 'asset.lfs']);
+    await git(root, ['commit', '-qm', 'lfs']);
+  }, 'GIT_LFS');
+
+  await assertUnsupportedSubtype(async (root) => {
+    await git(root, ['config', 'core.sparseCheckout', 'true']);
+  }, 'SPARSE_CHECKOUT');
+  await assertUnsupportedObservedPath('../outside', 'PATH_TRAVERSAL');
+  await assertUnsupportedObservedPath('bad\npath', 'CONTROL_CHARACTER_PATH');
+  await assertMalformedGitTree(Buffer.from('100644 mystery\tfile\0'), 'UNKNOWN_ENTRY_TYPE');
+  await assertMalformedGitTree(Buffer.from([0x31, 0x30, 0x30, 0x36, 0x34, 0x34, 0x20, 0x62, 0x6c, 0x6f, 0x62, 0x09, 0xff, 0x00]), 'NON_UTF8_PATH');
+
+  const fixture = await createFixture();
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-linked-parent-'));
+  const linked = path.join(parent, 'worktree');
+  try {
+    await git(fixture.root, ['worktree', 'add', '--detach', '-q', linked, 'HEAD']);
+    await assertUnsupportedSubtypeAtPath(linked, 'LINKED_WORKTREE');
+  } finally {
+    await fs.rm(linked, {recursive: true, force: true});
+    await remove(parent);
+    await remove(fixture.root);
+  }
+});
+
 test('redacts explicit environment values even when they are short', async () => {
   const fixture = await createFixture();
   const command = {...fixture.request.command, environmentPolicy: {variables: {TOKEN: 'x'}}};
@@ -426,6 +468,104 @@ test('returns COMMAND_TIMEOUT for a real isolated process tree timeout', async (
 
 function adapter(execute) {
   return {check: async () => ({available: true}), execute};
+}
+
+async function assertUnsupportedSubtype(configure, subtype) {
+  const fixture = await createFixture();
+  try {
+    await configure(fixture.root);
+    await assertUnsupportedSubtypeAtPath(fixture.root, subtype);
+  } finally {
+    await remove(fixture.root);
+  }
+}
+
+async function assertUnsupportedObservedPath(entryPath, subtype) {
+  const fixture = await createFixture();
+  try {
+    await assertUnsupportedSubtypeAtPath(fixture.root, subtype, [entryPath]);
+  } finally {
+    await remove(fixture.root);
+  }
+}
+
+async function assertMalformedGitTree(treeOutput, subtype) {
+  const fixture = await createFixture();
+  const wrapper = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-git-wrapper-')), 'git-wrapper.mjs');
+  try {
+    const bytes = [...treeOutput];
+    await fs.writeFile(wrapper, `#!/usr/bin/env node
+import {spawnSync} from 'node:child_process';
+
+const args = process.argv.slice(2);
+if (args.includes('ls-tree')) {
+  process.stdout.write(Buffer.from(${JSON.stringify(bytes)}));
+  process.exit(0);
+}
+const result = spawnSync('git', args, {stdio: 'inherit'});
+process.exit(result.status ?? 1);
+`);
+    await fs.chmod(wrapper, 0o755);
+    const command = {
+      executable: process.execPath,
+      args: ['-e', 'process.exit(0)'],
+      cwd: '.',
+      timeoutSeconds: 2,
+    };
+    const result = await executeProofCommand({
+      proofSubject: {
+        ...fixture.request.proofSubject,
+        trackedPatch: Buffer.alloc(0),
+        manifest: [],
+        untrackedFiles: [],
+        untrackedPaths: [],
+        gitStatus: '',
+      },
+      approvedCommand: command,
+      command,
+    }, {
+      gitBinary: wrapper,
+      isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null})),
+    });
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
+    assert.deepEqual(result.details, {subtype});
+  } finally {
+    await remove(path.dirname(wrapper));
+    await remove(fixture.root);
+  }
+}
+
+async function assertUnsupportedSubtypeAtPath(root, subtype, untrackedPaths = []) {
+  const command = {
+    executable: process.execPath,
+    args: ['-e', 'process.exit(0)'],
+    cwd: '.',
+    timeoutSeconds: 2,
+  };
+  const proofSubject = {
+    sourcePath: root,
+    commitSha: (await git(root, ['rev-parse', 'HEAD'])).trim(),
+    trackedPatch: Buffer.alloc(0),
+    manifest: [],
+    untrackedFiles: [],
+    untrackedPaths,
+    gitStatus: await git(root, ['status', '--porcelain=v1', '--untracked-files=all']),
+  };
+  let checked = 0;
+  const result = await executeProofCommand({proofSubject, approvedCommand: command, command}, {
+    isolation: {
+      check: async () => {
+        checked += 1;
+        return {available: true};
+      },
+      execute: async () => ({state: 'EXITED', exitCode: 0, signal: null}),
+    },
+  });
+  assert.equal(result.kind, 'run-error');
+  assert.equal(result.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
+  assert.deepEqual(result.details, {subtype});
+  assert.equal(checked, 0);
 }
 
 async function snapshotHash(root) {

@@ -8,6 +8,7 @@ import {promisify} from 'node:util';
 import test from 'node:test';
 
 import {createIssueProofPlay, runIssueProof} from '../src/index.js';
+import {hashCanonicalJson} from '../src/canonical-json.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -72,6 +73,119 @@ test('runs one confirmed public issue through a clean checkout to a proof card',
     assert.match(result.proofCard, /Overall: PROVED/);
     assert.equal(JSON.stringify(result).includes(fixture.root), false);
     assert.equal(JSON.stringify(result).includes('writeIssue'), false);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('emits the documented ordered compatibility contract without dependency or environment leakage', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions());
+
+    assert.deepEqual(Object.keys(result.json), [
+      'schemaVersion',
+      'ticket',
+      'proofSubject',
+      'evidencePlan',
+      'proofRun',
+      'criterionResults',
+      'overallStatus',
+      'proofSeal',
+      'rerunInputs',
+      'warnings',
+    ]);
+    assert.deepEqual(Object.keys(result.ticket), ['tracker', 'url', 'owner', 'repository', 'number', 'title', 'criteria']);
+    assert.deepEqual(Object.keys(result.ticket.criteria[0]), ['id', 'text', 'checked', 'nesting', 'raw']);
+    assert.deepEqual(Object.keys(result.proofSubject), ['criteriaHash', 'codeFingerprint']);
+    assert.deepEqual(Object.keys(result.proofSubject.codeFingerprint), [
+      'commitSha',
+      'trackedPatchSha256',
+      'dirtyFiles',
+      'untrackedFiles',
+      'lockfile',
+      'completeness',
+      'digest',
+    ]);
+    assert.equal(Object.hasOwn(result.proofSubject.codeFingerprint, 'dependencyDigest'), false);
+    const {digest, ...fingerprintFacts} = result.proofSubject.codeFingerprint;
+    assert.equal(digest, hashCanonicalJson(fingerprintFacts));
+    assert.deepEqual(Object.keys(result.evidencePlan), ['hash', 'approval', 'commands']);
+    assert.deepEqual(Object.keys(result.evidencePlan.commands[0]), ['id', 'command', 'criteria']);
+    assert.deepEqual(Object.keys(result.evidencePlan.commands[0].command), [
+      'executable',
+      'args',
+      'cwd',
+      'timeoutSeconds',
+      'environmentPolicy',
+    ]);
+    assert.deepEqual(Object.keys(result.proofRun), [
+      'executionEnvironment',
+      'startedAt',
+      'endedAt',
+      'durationMs',
+      'runError',
+      'commands',
+      'cleanup',
+    ]);
+    assert.deepEqual(Object.keys(result.proofRun.executionEnvironment), [
+      'os',
+      'architecture',
+      'git',
+      'runtime',
+      'packageManager',
+    ]);
+    assert.deepEqual(Object.keys(result.proofRun.commands[0]), ['id', 'command', 'mapping', 'execution', 'output']);
+    assert.deepEqual(Object.keys(result.proofRun.commands[0].execution), [
+      'state',
+      'exitCode',
+      'signal',
+      'startedAt',
+      'endedAt',
+      'durationMs',
+      'networkPolicy',
+    ]);
+    assert.deepEqual(Object.keys(result.proofRun.commands[0].output), ['streams', 'warnings']);
+    assert.deepEqual(Object.keys(result.proofRun.commands[0].output.streams.stdout), [
+      'binary',
+      'byteCount',
+      'excerpt',
+      'truncated',
+    ]);
+    assert.deepEqual(Object.keys(result.criterionResults[0]), [
+      'id',
+      'text',
+      'checked',
+      'status',
+      'evidence',
+      'rationale',
+    ]);
+    assert.deepEqual(Object.keys(result.rerunInputs), [
+      'issueUrl',
+      'repository',
+      'checkoutPath',
+      'criteriaHash',
+      'codeFingerprintDigest',
+      'evidencePlanHash',
+    ]);
+    assert.equal(result.proofRun.executionEnvironment.os.family, 'linux');
+    assert.equal(result.schemaVersion, '1.0');
+    assert.equal(result.ticket.tracker, 'github');
+    assert.equal(result.proofSubject.codeFingerprint.completeness, 'COMPLETE');
+    assert.equal(result.evidencePlan.approval, 'APPROVED');
+    assert.equal(result.proofRun.commands[0].execution.state, 'EXITED');
+    assert.equal(Number.isInteger(result.proofRun.commands[0].execution.exitCode), true);
+    assert.equal(result.proofRun.commands[0].execution.signal, null);
+    assert.equal(result.proofRun.commands[0].execution.networkPolicy, 'DENIED');
+    assert.equal(result.criterionResults[0].status, 'PROVED');
+    assert.equal(result.overallStatus, 'PROVED');
+    assert.equal(result.proofRun.cleanup.state, 'CLEANED');
+    assert.equal(result.proofRun.runError, null);
+    assert.match(result.proofSeal, /^sha256-v1:[0-9a-f]{64}$/);
   } finally {
     await remove(fixture.root);
   }
@@ -556,6 +670,139 @@ test('keeps seals stable across presentation changes and excludes private output
   }
 });
 
+test('changes the seal when any stable proof fact changes', async () => {
+  const fixture = await createFixture();
+  const run = (input = {}, overrides = {}) => runIssueProof({
+    issueUrl: issueUrl(),
+    checkoutPath: fixture.root,
+    ...input,
+  }, successfulOptions(overrides));
+  try {
+    const base = await run();
+    const changedCriteria = await run({}, {
+      github: {
+        readIssue: async () => ({
+          title: 'Issue',
+          body: '## Acceptance criteria\n- [ ] A different promise.\n',
+        }),
+      },
+    });
+    const changedCommand = await run({
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0);']},
+    });
+    const changedEnvironment = await run({}, {
+      environment: {
+        ...environment(),
+        runtime: {name: 'node', version: '22.0.1'},
+      },
+    });
+    const changedExplicitEnvironment = await run({
+      command: {
+        executable: process.execPath,
+        args: ['-e', 'process.exit(0)'],
+        environmentPolicy: {variables: {TOKEN: 'x'}},
+      },
+    });
+    const changedOutcome = await run({}, {
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => ({state: 'EXITED', exitCode: 2, signal: null, stdout: Buffer.alloc(0), stderr: Buffer.alloc(0)}),
+        },
+      },
+    });
+    const changedWarning = await run({}, {
+      redactionValues: ['top-secret'],
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => outcomeWithOutput('top-secret\n'),
+        },
+      },
+    });
+
+    assert.notEqual(changedCriteria.proofSeal, base.proofSeal);
+    assert.notEqual(changedCommand.proofSeal, base.proofSeal);
+    assert.notEqual(changedEnvironment.proofSeal, base.proofSeal);
+    assert.notEqual(changedExplicitEnvironment.proofSeal, base.proofSeal);
+    assert.notEqual(changedOutcome.proofSeal, base.proofSeal);
+    assert.notEqual(changedWarning.proofSeal, base.proofSeal);
+    await fs.writeFile(path.join(fixture.root, 'source.js'), 'changed\n');
+    const changedFingerprint = await run();
+    assert.notEqual(changedFingerprint.proofSeal, base.proofSeal);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('composes output masking, truncation, binary output, and source freshness into the public seam', async () => {
+  const fixture = await createFixture();
+  try {
+    const truncated = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => outcomeWithOutput(Buffer.concat([
+            Buffer.alloc(32768, 'a'),
+            Buffer.alloc(32768, 'b'),
+            Buffer.from('tail'),
+          ])),
+        },
+      },
+    }));
+    assert.equal(truncated.kind, 'proof-run');
+    assert.equal(truncated.proofRun.commands[0].output.streams.stdout.truncated, true);
+    assert.equal(truncated.proofRun.commands[0].output.streams.stdout.byteCount, 65540);
+    assert.equal(truncated.warnings.some(({code, stream}) => code === 'OUTPUT_TRUNCATED' && stream === 'stdout'), true);
+    assert.equal(Buffer.byteLength(truncated.proofRun.commands[0].output.streams.stdout.excerpt) <= 4096, true);
+
+    const binary = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => outcomeWithOutput(Buffer.from([0, 1, 2, 3])),
+        },
+      },
+    }));
+    const binaryStream = binary.proofRun.commands[0].output.streams.stdout;
+    assert.equal(binaryStream.binary, true);
+    assert.equal(binaryStream.excerpt, null);
+    assert.equal(binary.warnings.some(({code}) => code === 'BINARY_OUTPUT_OMITTED'), true);
+
+    const masked = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      redactionValues: ['credential-fixture'],
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => outcomeWithOutput('credential-fixture\n'),
+        },
+      },
+    }));
+    assert.equal(JSON.stringify(masked).includes('credential-fixture'), false);
+    assert.equal(masked.warnings.some(({code}) => code === 'VALUE_REDACTED'), true);
+
+    const sourceChanged = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async (context) => {
+            await fs.writeFile(path.join(context.sourcePath, 'source.js'), 'mutated\n');
+            return processOutcome();
+          },
+        },
+      },
+    }));
+    assert.equal(sourceChanged.kind, 'run-error');
+    assert.equal(sourceChanged.code, 'SOURCE_CHANGED');
+    assert.equal(sourceChanged.overallStatus, null);
+    assert.equal(sourceChanged.proofSeal, null);
+    assert.equal(sourceChanged.cleanup.state, 'CLEANED');
+    assert.equal(JSON.stringify(sourceChanged).includes(fixture.root), false);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('keeps the criteria hash independent from checked state and presentation whitespace', async () => {
   const fixture = await createFixture();
   try {
@@ -614,11 +861,26 @@ test('reconstructs staged, unstaged, added, and binary tracked changes', async (
 test('previews untracked paths before reading safe content and marks exclusions incomplete', async () => {
   const fixture = await createFixture();
   const previews = [];
+  const secretPaths = [
+    '.env',
+    '.env.local',
+    '.npmrc',
+    'certificate.PEM',
+    'credentials',
+    'credentials.json',
+    'id_ed25519',
+    'id_rsa',
+    'nested/.env.local',
+    'private.KEY',
+    'store.P12',
+    'store.PFX',
+  ];
   try {
     await fs.writeFile(path.join(fixture.root, 'safe.txt'), 'safe-content\n');
     await fs.mkdir(path.join(fixture.root, 'nested'));
-    await fs.writeFile(path.join(fixture.root, 'nested/.EnV.Secret'), 'secret-content\n');
-    await fs.writeFile(path.join(fixture.root, 'certificate.PEM'), 'certificate-content\n');
+    for (const secretPath of secretPaths) {
+      await fs.writeFile(path.join(fixture.root, secretPath), 'secret-content\n');
+    }
     await fs.writeFile(path.join(fixture.root, 'large.bin'), Buffer.alloc(1024 * 1024 + 1, 'x'));
 
     const result = await runIssueProof({
@@ -642,23 +904,65 @@ test('previews untracked paths before reading safe content and marks exclusions 
     }));
 
     assert.equal(previews.length, 1);
-    assert.deepEqual(previews[0].map(({path: entryPath}) => entryPath), [
-      'certificate.PEM',
-      'large.bin',
-      'nested/.EnV.Secret',
-      'safe.txt',
-    ]);
+    assert.deepEqual(previews[0].map(({path: entryPath}) => entryPath), [...secretPaths, 'large.bin', 'safe.txt'].sort());
     assert.equal(result.proofSubject.codeFingerprint.completeness, 'INCOMPLETE');
     assert.equal(result.overallStatus, 'INCOMPLETE');
-    assert.deepEqual(result.warnings.filter(({code}) => code === 'FINGERPRINT_INCOMPLETE').map(({code, reason}) => ({code, reason})), [
-      {code: 'FINGERPRINT_INCOMPLETE', reason: 'FILE_TOO_LARGE'},
-      {code: 'FINGERPRINT_INCOMPLETE', reason: 'SECRET_PATH'},
-      {code: 'FINGERPRINT_INCOMPLETE', reason: 'SECRET_PATH'},
-    ]);
-    assert.equal(result.warnings.every(({path: entryPath}) => entryPath !== 'nested/.EnV.Secret' && entryPath !== 'certificate.PEM'), true);
+    const incompleteWarnings = result.warnings.filter(({code}) => code === 'FINGERPRINT_INCOMPLETE');
+    assert.equal(incompleteWarnings.filter(({reason}) => reason === 'FILE_TOO_LARGE').length, 1);
+    assert.equal(incompleteWarnings.filter(({reason}) => reason === 'SECRET_PATH').length, secretPaths.length);
+    assert.equal(incompleteWarnings.every(({path: entryPath}) => !entryPath || !secretPaths.includes(entryPath)), true);
     assert.equal(JSON.stringify(result).includes('safe-content'), false);
     assert.equal(JSON.stringify(result).includes('secret-content'), false);
-    assert.equal(JSON.stringify(result).includes('nested/.EnV.Secret'), false);
+    for (const secretPath of secretPaths) assert.equal(JSON.stringify(result).includes(secretPath), false);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('runs a multi-criterion play with an approved safe untracked subject', async () => {
+  const fixture = await createFixture();
+  try {
+    await fs.writeFile(path.join(fixture.root, 'approved.txt'), 'approved-content\n');
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {
+        executable: process.execPath,
+        args: ['-e', 'process.exit(0)'],
+        criteria: ['criterion-1', 'criterion-2'],
+      },
+    }, successfulOptions({
+      github: {
+        readIssue: async () => ({
+          title: 'Approved untracked subject',
+          body: '## Acceptance criteria\n- [ ] First promise.\n- [ ] Second promise.\n',
+        }),
+      },
+      decisions: {
+        confirmCriteria: async () => true,
+        confirmUntracked: async (previews) => {
+          assert.deepEqual(previews.map(({path: entryPath}) => entryPath), ['approved.txt']);
+          assert.equal(Object.hasOwn(previews[0], 'content'), false);
+          return true;
+        },
+        approvePlan: async () => true,
+      },
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async (context) => {
+            assert.equal(await fs.readFile(path.join(context.snapshotPath, 'approved.txt'), 'utf8'), 'approved-content\n');
+            return processOutcome();
+          },
+        },
+      },
+    }));
+
+    assert.deepEqual(result.criterionResults.map(({status}) => status), ['PROVED', 'PROVED']);
+    assert.equal(result.proofSubject.codeFingerprint.completeness, 'COMPLETE');
+    assert.deepEqual(result.proofSubject.codeFingerprint.untrackedFiles.map(({path: entryPath}) => entryPath), ['approved.txt']);
+    assert.equal(result.overallStatus, 'PROVED');
+    assert.equal(JSON.stringify(result).includes('approved-content'), false);
   } finally {
     await remove(fixture.root);
   }
@@ -702,19 +1006,32 @@ test('enforces the aggregate safe-untracked limit without reading excluded conte
   }
 });
 
-test('rejects an untracked symlink before planning or execution', async () => {
+test('rejects unsupported untracked shapes before planning or execution', async (t) => {
+  if (process.platform !== 'linux') t.skip('The special-file fixture requires Linux.');
   const fixture = await createFixture();
   let planned = false;
   try {
     await fs.symlink('source.js', path.join(fixture.root, 'link.js'));
-    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+    const symlinkResult = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
       decisions: {confirmCriteria: async () => true, approvePlan: async () => { planned = true; return true; }},
     }));
-    assert.equal(result.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
-    assert.deepEqual(result.details, {subtype: 'SYMLINK'});
+    assert.equal(symlinkResult.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
+    assert.deepEqual(symlinkResult.details, {subtype: 'SYMLINK'});
     assert.equal(planned, false);
-    assert.equal(result.overallStatus, null);
-    assert.equal(result.proofSeal, null);
+    assert.equal(symlinkResult.overallStatus, null);
+    assert.equal(symlinkResult.proofSeal, null);
+
+    await fs.rm(path.join(fixture.root, 'link.js'));
+    await fs.rm(path.join(fixture.root, 'source.js'));
+    await execFileAsync('mkfifo', [path.join(fixture.root, 'source.js')]);
+    const specialResult = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      decisions: {confirmCriteria: async () => true, approvePlan: async () => { planned = true; return true; }},
+    }));
+    assert.equal(specialResult.code, 'UNSUPPORTED_CHECKOUT_SHAPE');
+    assert.deepEqual(specialResult.details, {subtype: 'SPECIAL_FILE'});
+    assert.equal(planned, false);
+    assert.equal(specialResult.overallStatus, null);
+    assert.equal(specialResult.proofSeal, null);
   } finally {
     await remove(fixture.root);
   }
@@ -795,7 +1112,7 @@ test('binds the existing dependency tree to the complete proof run', async () =>
     assert.equal(result.kind, 'run-error');
     assert.equal(result.code, 'SOURCE_CHANGED');
     assert.equal(result.sourceIntegrity, 'CHANGED');
-    assert.equal(result.cleanup.state, 'NOT_REQUIRED');
+    assert.equal(result.cleanup.state, 'CLEANED');
   } finally {
     await remove(fixture.root);
   }

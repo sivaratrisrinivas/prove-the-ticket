@@ -68,6 +68,12 @@ timestamps, durations, run IDs, formatting, and filesystem paths stay outside
 the seal. Rendering sanitizes checkout and temporary paths and never includes
 untracked content.
 
+The ordered artifact fields and closed enum values form the shareable
+compatibility contract. Omitted fields and `null` values remain distinct. The
+repository-only code fingerprint exposes only its documented fields; dependency
+bytes remain bound in the executor's private subject and are not emitted as a
+fingerprint or execution-environment field.
+
 ## Synthesis decision
 
 The existing execution boundary is the only trusted command-running capability.

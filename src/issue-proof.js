@@ -97,7 +97,9 @@ export async function runIssueProof(input, options = {}) {
     const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria, input.checkoutPath);
     const environment = normalizeEnvironment(await readExecutionEnvironment(runtime, fingerprint.lockfile));
     const executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
-    await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
+    if (!executionResults.some((result) => classifyExecution(result).kind === 'pre-result-error')) {
+      await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
+    }
     const endedAt = runtime.now();
 
     return assembleProofResult({
@@ -579,7 +581,6 @@ async function inspectCheckout(checkoutPath, lockfilePath, runtime, decisions, a
   if (!stat?.isDirectory()) throw new ProofError('REPOSITORY_MISMATCH', 'The local checkout is unavailable.');
   const commitSha = (await gitBuffer(runtime, checkoutPath, ['rev-parse', 'HEAD'])).toString('utf8').trim();
   if (!/^[0-9a-f]{40,64}$/i.test(commitSha)) throw new ProofError('SNAPSHOT_MISMATCH', 'The local checkout commit is invalid.');
-  const trackedPatch = await gitBuffer(runtime, checkoutPath, ['diff', '--binary', '--full-index', 'HEAD', '--']);
   const gitStatus = (await gitBuffer(runtime, checkoutPath, ['status', '--porcelain=v1', '--untracked-files=all'])).toString('utf8');
   const dirtyFiles = await readDirtyFiles(checkoutPath, runtime);
   const untrackedPaths = splitNul(await gitBuffer(runtime, checkoutPath, ['ls-files', '--others', '--exclude-standard', '-z']))
@@ -591,16 +592,15 @@ async function inspectCheckout(checkoutPath, lockfilePath, runtime, decisions, a
   }
   const packageJson = await readPackageJson(checkoutPath);
   const manifest = await readManifest(checkoutPath, commitSha, runtime, untracked.files);
+  const trackedPatch = await gitBuffer(runtime, checkoutPath, ['diff', '--binary', '--full-index', 'HEAD', '--']);
   const lockfile = await readLockfile(checkoutPath, lockfilePath, manifest);
   const dependencyTree = await readDependencyTree(checkoutPath, packageJson);
-  const dependencyDigest = dependencyTree?.digest || null;
   const codeFingerprintBase = {
     commitSha,
     trackedPatchSha256: hashBuffer(trackedPatch),
     dirtyFiles,
     untrackedFiles: untracked.files.map(({path: entryPath, size, sha256}) => ({path: entryPath, size, sha256})),
     lockfile,
-    dependencyDigest,
     completeness: untracked.warnings.length === 0 ? 'COMPLETE' : 'INCOMPLETE',
   };
   const codeFingerprint = {...codeFingerprintBase, digest: hashJson(codeFingerprintBase)};
