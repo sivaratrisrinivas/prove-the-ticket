@@ -3,7 +3,7 @@
  * @rote-frontmatter
  * ---
  * name: prove-the-ticket
- * description: Public Community Play for issue-bound verification. Supports ordinary-file Node checkouts on capability-validated Linux only; issue reads are anonymous and public-only; verification commands have no external network and cannot install dependencies; version 0.1 performs no GitHub write. This release does not claim criteria generation; does not claim criteria rewriting; does not claim command dependencies; does not claim output extraction; does not claim static evidence; does not claim manual evidence; does not claim comments; does not claim private repositories; does not claim non-Node repositories; does not claim cross-run reuse; does not claim macOS; does not claim Windows.
+ * description: Checks a public GitHub issue against a local Node checkout. It only supports ordinary-file Node checkouts on Linux after the required isolation checks pass. It reads public issues anonymously. Verification commands have no network access and cannot install dependencies. Version 0.1 never writes to GitHub. It does not generate or rewrite criteria, manage command dependencies, extract output, collect static or manual evidence, post comments, use private or non-Node repositories, reuse results across runs, or support macOS or Windows.
  * source: https://github.com/sivaratrisrinivas/prove-the-ticket
  * provenance:
  *   author: prove-ticket
@@ -11,22 +11,22 @@
  * - name: issue_url
  *   param_type: string
  *   required: true
- *   description: Full public GitHub issue URL to read anonymously
+ *   description: Public GitHub issue URL.
  * - name: checkout_path
  *   param_type: string
  *   required: true
- *   description: Absolute path to the local Node checkout under verification
+ *   description: Absolute path to the local Node checkout.
  * - name: confirm_criteria
  *   param_type: string
  *   required: true
- *   description: Type yes after reviewing the complete extracted criteria
+ *   description: Enter yes after reviewing all extracted criteria.
  * - name: approve_plan
  *   param_type: string
  *   required: true
- *   description: Type yes after reviewing the complete independent command plan
+ *   description: Enter yes after reviewing the full command plan.
  * metadata:
  *   rote_version: 0.79.0
- *   version: 0.1.0
+ *   version: 0.1.1
  *   status: released
  *   kind: atomic
  *   flow_type: sequential
@@ -95,11 +95,11 @@ try {
 
 const status = result.overallStatus ?? result.code ?? 'UNKNOWN';
 const human = [
-  '# prove-the-ticket 0.1',
+  '# prove-the-ticket 0.1.1',
   '',
-  'Public GitHub issue reads are anonymous and public-only.',
-  'Verification commands run without external network access and cannot install dependencies.',
-  'This release performs no GitHub write.',
+  'We read the public issue anonymously.',
+  'Verification commands run on Linux with no network and cannot install dependencies.',
+  'This Play never writes to GitHub.',
   '',
   result.proofCard || `Run error: ${result.message || result.code || 'unknown error'}`,
 ].join('\n');

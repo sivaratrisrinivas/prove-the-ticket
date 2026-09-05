@@ -11,23 +11,20 @@ test('declares the public 0.1 Rote contract and required confirmations', async (
   const play = await fs.readFile(playPath, 'utf8');
 
   for (const phrase of [
-    'ordinary-file Node checkouts on capability-validated Linux only',
-    'issue reads are anonymous and public-only',
-    'verification commands have no external network',
+    'ordinary-file Node checkouts on Linux after the required isolation checks pass',
+    'reads public issues anonymously',
+    'Verification commands have no network access',
     'cannot install dependencies',
-    'version 0.1 performs no GitHub write',
-    'does not claim criteria generation',
-    'does not claim criteria rewriting',
-    'does not claim command dependencies',
-    'does not claim output extraction',
-    'does not claim static evidence',
-    'does not claim manual evidence',
-    'does not claim comments',
-    'does not claim private repositories',
-    'does not claim non-Node repositories',
-    'does not claim cross-run reuse',
-    'does not claim macOS',
-    'does not claim Windows',
+    'Version 0.1 never writes to GitHub',
+    'does not generate or rewrite criteria',
+    'manage command dependencies',
+    'extract output',
+    'collect static or manual evidence',
+    'post comments',
+    'use private or non-Node repositories',
+    'reuse results across runs',
+    'support macOS',
+    'support macOS or Windows',
   ]) {
     assert.match(play, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), phrase);
   }
