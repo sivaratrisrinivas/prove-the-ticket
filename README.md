@@ -52,9 +52,9 @@ Binary output is represented by its size and hash.
 
 ## Public Community Play
 
-Version 0.1 is published as the pinned Community Play
-[`prove-ticket/prove-the-ticket@0.1.1`](https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.1).
-Version 0.1.0 remains available as the original immutable release.
+Version 0.1.2 is the current pinned Community Play
+[`prove-ticket/prove-the-ticket@0.1.2`](https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.2).
+Earlier immutable releases `0.1.0` and `0.1.1` remain available.
 It reads one public GitHub issue and checks the matching local Node checkout.
 It returns a proof card and a stable proof seal.
 
@@ -78,7 +78,7 @@ rote play run rote/prove-the-ticket/main.ts \
 Run the published package:
 
 ```sh
-rote play run https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.1 \
+rote play run https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.2 \
   issue_url=https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6 \
   checkout_path="$PWD" \
   confirm_criteria=yes \
@@ -90,20 +90,20 @@ Use `rote play inspect` before running the published package. Rote shows the
 inputs, access, effects, and package digest before execution.
 
 Version 0.1 supports ordinary-file Node checkouts on capability-validated Linux
-only. It reads public issues anonymously. Verification commands have no
-external network and cannot install dependencies. The Play performs no GitHub
-write. The public card also lists the features that are not part of 0.1.
+only. The checkout must have a root `package.json` with at least one of
+`check`, `test`, or `verify`. The Play discovers those scripts in that order
+and runs each as `npm run <name>`. It reads public issues anonymously.
+Verification commands have no external network and cannot install dependencies.
+The Play performs no GitHub write. The public card also lists the features that
+are not part of 0.1.
 
-The package loads `src/index.js` from the checkout you pass. That keeps the run
-tied to the source under test instead of embedding a second implementation.
-The shareable result contains the privacy-safe proof only. It does not render
-the local checkout path, temporary snapshot paths, credentials, or untracked
-file contents.
+The published package embeds its own verifier. The checkout you pass is only
+the repository under inspection. The shareable result contains the privacy-safe
+proof only. It does not render the local checkout path, temporary snapshot
+paths, credentials, or untracked file contents.
 
-The plain-English 0.1.1 release commit is
-`4d4710fa5ea319a2e28e24fe3c58d00c47de5b8e`. Its Community archive digest is
-`sha256:207a74e7da9562f6b2fd03ce7e41c636bd8f2d453210402a418b7b358387ecdb`.
-The complete release history is in
+The 0.1.2 release identity is recorded after publication. Earlier release
+history remains in
 [issue #8](https://github.com/sivaratrisrinivas/prove-the-ticket/issues/8).
 
 ## Self-proof evidence
@@ -112,10 +112,10 @@ The original self-proof for issue #7 is retained in
 [`evidence/issue-7`](evidence/issue-7). It records the proof of all 20
 criteria from completed issue #6 at the earlier implementation commit.
 
-The plain-English 0.1.1 Community release was verified from its release
-commit. The pinned Play read issue #6 anonymously and ran `npm run check` and
-`npm test` through the Linux isolation boundary. All 73 tests passed, all 20
-issue criteria were `PROVED`, and the overall result was `PROVED`.
+The 0.1.1 Community release was verified from its release commit against this
+repository. The 0.1.2 release packages the verifier inside the Play so the same
+pinned URI can prove an unrelated public Node repository that has matching
+checkbox criteria and root `check`, `test`, or `verify` scripts.
 
 ## Verification
 

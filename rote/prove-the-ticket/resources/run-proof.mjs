@@ -1,5 +1,5 @@
 import path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const [issueUrl, checkoutPath, criteriaConfirmation, planConfirmation] = process.argv.slice(2);
 
@@ -8,11 +8,13 @@ if (![issueUrl, checkoutPath, criteriaConfirmation, planConfirmation].every((val
   process.exit(2);
 }
 
+const verifierEntry = path.join(path.dirname(fileURLToPath(import.meta.url)), 'verifier', 'index.js');
+
 let runIssueProof;
 try {
-  ({runIssueProof} = await import(pathToFileURL(path.join(checkoutPath, 'src', 'index.js')).href));
+  ({runIssueProof} = await import(pathToFileURL(verifierEntry).href));
 } catch {
-  process.stderr.write('The checkout does not contain the prove-the-ticket implementation.\n');
+  process.stderr.write('The packaged prove-the-ticket verifier could not be loaded.\n');
   process.exit(2);
 }
 

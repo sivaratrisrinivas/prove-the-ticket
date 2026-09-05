@@ -26,7 +26,7 @@
  *   description: Enter yes after reviewing the full command plan.
  * metadata:
  *   rote_version: 0.79.0
- *   version: 0.1.1
+ *   version: 0.1.2
  *   status: released
  *   kind: atomic
  *   flow_type: sequential
@@ -95,7 +95,7 @@ try {
 
 const status = result.overallStatus ?? result.code ?? 'UNKNOWN';
 const human = [
-  '# prove-the-ticket 0.1.1',
+  '# prove-the-ticket 0.1.2',
   '',
   'We read the public issue anonymously.',
   'Verification commands run on Linux with no network and cannot install dependencies.',

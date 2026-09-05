@@ -25,6 +25,62 @@ test('preserves cleanup when a command outcome has an invalid execution state', 
   assert.deepEqual(classification.cleanup, cleanup);
 });
 
+test('discovers root check, test, and verify scripts in that order', async () => {
+  const fixture = await createFixture({
+    scripts: {
+      verify: 'node --version',
+      build: 'node --version',
+      test: 'node --version',
+      check: 'node --version',
+    },
+  });
+  const plans = [];
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+    }, successfulOptions({
+      decisions: {
+        async confirmCriteria() {
+          return true;
+        },
+        async approvePlan(plan) {
+          plans.push(plan);
+          return true;
+        },
+      },
+    }));
+
+    assert.deepEqual(
+      plans[0].commands.map(({command}) => [command.executable, ...command.args]),
+      [
+        ['npm', 'run', 'check'],
+        ['npm', 'run', 'test'],
+        ['npm', 'run', 'verify'],
+      ],
+    );
+    assert.equal(result.kind, 'proof-run');
+    assert.equal(result.evidencePlan.commands.length, 3);
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rejects a Node checkout with no check, test, or verify script', async () => {
+  const fixture = await createFixture({scripts: {build: 'node --version'}});
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+    }, successfulOptions());
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'COMMAND_REQUIRED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('runs one confirmed public issue through a clean checkout to a proof card', async () => {
   const fixture = await createFixture();
   const calls = {issue: [], criteria: [], plans: [], execution: []};
@@ -1436,11 +1492,18 @@ function outcomeWithOutput(output) {
   return {...processOutcome(), stdout: Buffer.from(output)};
 }
 
-async function createFixture({remote = 'https://github.com/Owner/Repository.git', dependencies = false, binary = false} = {}) {
+async function createFixture({
+  remote = 'https://github.com/Owner/Repository.git',
+  dependencies = false,
+  binary = false,
+  scripts = {test: 'node --version'},
+} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-issue-proof-'));
-  const packageJson = dependencies
-    ? '{"name":"fixture","scripts":{"test":"node --version"},"dependencies":{"missing-package":"1.0.0"}}\n'
-    : '{"name":"fixture","scripts":{"test":"node --version"}}\n';
+  const packageJson = JSON.stringify({
+    name: 'fixture',
+    scripts,
+    ...(dependencies ? {dependencies: {'missing-package': '1.0.0'}} : {}),
+  }) + '\n';
   await fs.writeFile(path.join(root, 'package.json'), packageJson);
   await fs.writeFile(path.join(root, 'source.js'), 'export const value = 1;\n');
   if (binary) {
