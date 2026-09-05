@@ -31,7 +31,7 @@ const WARNING_ORDER = new Map([
  * @typedef {{proofSubject: ProofSubject, approvedCommand: ApprovedCommand, command?: ApprovedCommand, redactionValues?: string[]}} ExecutionRequest
  * @typedef {{state: 'EXITED'|'SIGNALED'|'TIMED_OUT', exitCode: number|null, signal: string|null, stdout?: Uint8Array|string, stderr?: Uint8Array|string, durationMs?: number}} ProcessOutcome
  * @typedef {{check: (context: {platform: string}) => Promise<{available: true}|{available: false, reason?: string}>, execute: (context: {snapshotPath: string, scratchPath: string, dependencyTree: DependencyTree|null, command: ApprovedCommand, internalCwd: string, environment: Record<string, string>, sourcePath: string}) => Promise<ProcessOutcome>}} IsolationAdapter
- * @typedef {{isolation?: IsolationAdapter, platform?: string, now?: () => number, tempRoot?: string, bwrapBinary?: string, gitBinary?: string, tarBinary?: string, cleanup?: (rootPath: string) => Promise<void>}} ExecutionOptions
+ * @typedef {{isolation?: IsolationAdapter, platform?: string, now?: () => number, tempRoot?: string, bwrapBinary?: string, gitBinary?: string, tarBinary?: string, runtimePath?: string, cleanup?: (rootPath: string) => Promise<void>}} ExecutionOptions
  */
 
 class BoundaryError extends Error {
@@ -188,6 +188,7 @@ function createRuntime(options) {
     bwrapBinary: options.bwrapBinary || 'bwrap',
     gitBinary: options.gitBinary || 'git',
     tarBinary: options.tarBinary || 'tar',
+    runtimePath: options.runtimePath || process.execPath,
     isolation: options.isolation,
     cleanup: options.cleanup || ((rootPath) => fs.rm(rootPath, {recursive: true, force: true})),
   };
@@ -719,7 +720,7 @@ function createBubblewrapIsolation(runtime) {
         '--unshare-net',
         '--unshare-pid',
         '--tmpfs', '/',
-        ...(await systemMountArgs()),
+      ...(await systemMountArgs(undefined, runtime.runtimePath)),
         '--proc', '/proc',
         '--dev', '/dev',
         '--clearenv',
@@ -737,7 +738,7 @@ function createBubblewrapIsolation(runtime) {
         '--unshare-net',
         '--unshare-pid',
         '--tmpfs', '/',
-        ...(await systemMountArgs(context.sourcePath)),
+        ...(await systemMountArgs(context.sourcePath, runtime.runtimePath)),
         '--tmpfs', '/tmp',
         '--proc', '/proc',
         '--dev', '/dev',
@@ -762,7 +763,7 @@ function createBubblewrapIsolation(runtime) {
   };
 }
 
-async function systemMountArgs(excludedPath) {
+async function systemMountArgs(excludedPath, runtimePath = process.execPath) {
   const args = [];
   const systemPaths = ['/bin', '/lib', '/lib64', '/sbin', '/usr/bin', '/usr/lib', '/usr/lib64', '/usr/share/nodejs', '/usr/lib/node_modules'];
   const mountPaths = [];
@@ -776,8 +777,7 @@ async function systemMountArgs(excludedPath) {
     for (let current = path.dirname(systemPath); current !== '/'; current = path.dirname(current)) parents.add(current);
   }
   args.push(...[...parents].sort((left, right) => left.split('/').length - right.split('/').length).flatMap((directory) => ['--dir', directory]));
-  const runtimePath = process.execPath;
-  const runtimeRoot = path.dirname(path.dirname(process.execPath));
+  const runtimeRoot = path.dirname(path.dirname(runtimePath));
   const runtimeRootMounted = mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimeRoot));
   const runtimePathMounted = mountPaths.some((systemPath) => pathsOverlap(systemPath, runtimePath));
   if (!runtimeRootMounted) {
