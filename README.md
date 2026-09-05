@@ -50,6 +50,37 @@ The proof seal covers stable proof facts. Timestamps, durations, output
 excerpts, and formatting do not change it. Output is bounded and masked.
 Binary output is represented by its size and hash.
 
+## Public Community Play
+
+The release package in [`rote/prove-the-ticket`](rote/prove-the-ticket) is the
+public Rote Play wrapper for the 0.1 implementation. It accepts:
+
+- `issue_url`: a full public GitHub issue URL;
+- `checkout_path`: an absolute path to the local checkout;
+- `confirm_criteria=yes`: explicit human confirmation of the extracted criteria;
+- `approve_plan=yes`: explicit human approval of the complete command plan.
+
+Run the local package with:
+
+```sh
+rote play run rote/prove-the-ticket/main.ts \
+  issue_url=https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6 \
+  checkout_path="$PWD" \
+  confirm_criteria=yes \
+  approve_plan=yes
+```
+
+The public card discloses that 0.1 supports ordinary-file Node checkouts on
+capability-validated Linux only, reads public issues anonymously, denies network
+access to verification commands, forbids dependency installation, and performs
+no GitHub write. It also names the unsupported post-0.1 capabilities rather
+than implying they are available.
+
+The wrapper imports the implementation from the supplied checkout, so the
+pinned Play remains an inspectable runner for the exact local source being
+verified. Its shareable output contains the privacy-safe proof result only;
+the local checkout path and temporary snapshot paths are not rendered.
+
 ## Self-proof evidence
 
 Issue #7 is complete. At commit

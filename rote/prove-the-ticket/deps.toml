@@ -1,0 +1,15 @@
+schema_version = 1
+
+[[tools]]
+id = "node"
+command = "node"
+required = true
+version_requirement = ">=20.0.0"
+
+[[tools.install]]
+manager = "apt"
+package = "nodejs"
+
+[[tools.install]]
+manager = "brew"
+package = "node"
