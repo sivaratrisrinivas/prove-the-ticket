@@ -2,9 +2,9 @@
 
 `prove-the-ticket` turns one public GitHub issue and one matching clean Node
 checkout into a proof card. It reads the issue anonymously, asks the user to
-confirm one acceptance criterion, asks for approval of one verification
-command, and runs that command through the isolated execution boundary from
-issue #2. The workflow does not write to GitHub.
+confirm the existing acceptance criteria, asks for approval of an independent
+verification command plan, and runs every command through the isolated
+execution boundary from issue #2. The workflow does not write to GitHub.
 
 ## Public issue proof
 
@@ -14,7 +14,10 @@ import {runIssueProof} from 'prove-the-ticket';
 const result = await runIssueProof({
   issueUrl: 'https://github.com/owner/repository/issues/42',
   checkoutPath: '/work/repository',
-  command: {executable: 'npm', args: ['test']},
+  commands: [
+    {executable: 'npm', args: ['run', 'check'], criteria: ['criterion-1']},
+    {executable: 'npm', args: ['test'], criteria: ['criterion-2']},
+  ],
 }, {
   decisions: {
     confirmCriteria: async (criteria) => confirmCriteriaWithUser(criteria),
@@ -24,16 +27,28 @@ const result = await runIssueProof({
 ```
 
 The operation accepts HTTPS issue URLs and matching HTTPS or SSH GitHub
-remotes. It requires one checkbox beneath an `Acceptance criteria` heading and
-keeps the checkbox text, checked state, and nesting in the result. The checked
-state is metadata, not evidence.
+remotes. It requires one or more checkboxes beneath an `Acceptance criteria`
+heading and keeps each checkbox's source order, text, checked state, and
+nesting in the result. The checked state is metadata, not evidence.
+
+Use `commands` to provide one or more command entries. Each entry contains a
+Node executable, argument list, and one or more stable criterion IDs. A
+criterion may map to multiple commands. A command with no explicit mapping
+maps to every extracted criterion. The older singular `command` input remains
+supported and maps its command to every criterion.
+
+The plan callback receives every command, mapping, and timeout together. It
+must approve the complete plan. If the callback edits the presented plan or
+returns `{approved: true, plan: revisedPlan}`, the operation hashes the revised
+plan, marks it pending, and asks for approval again. It never executes an
+edited plan without a second approval.
 
 The checkout must be clean. The code fingerprint records the commit, an empty
 tracked-patch hash, empty dirty and untracked lists, lockfile identity or
 explicit absence, `COMPLETE`, and a digest. Environment details remain outside
 that fingerprint.
 
-The plan contains the exact command and its criterion mapping. The default
+The plan contains the exact commands and their criterion mappings. The default
 timeout is 300 seconds. Callers may set a timeout from 1 through 3,600 seconds.
 The boundary rejects dependency installation, denies network access, keeps the
 checkout and dependencies read-only, and gives the command a separate scratch
@@ -42,11 +57,13 @@ directory through `PROVE_THE_TICKET_SCRATCH_DIR`.
 ## Results
 
 A successful run returns versioned JSON with ticket identity, the proof
-subject, approved evidence plan, execution environment, command outcome,
-criterion result, overall status, warnings, and a `sha256-v1:` proof seal. A
-zero exit produces `PROVED`. A nonzero exit or signal produces `FAILED`. A
-timeout, unavailable dependency tree, or typed policy failure produces
-`UNVERIFIED` for the criterion and `INCOMPLETE` overall.
+subject, approved evidence plan, execution environment, every command outcome,
+per-criterion results, overall status, warnings, and a `sha256-v1:` proof seal.
+A criterion is `PROVED` only when every mapped command exits zero. A nonzero
+exit or signal makes a mapped criterion `FAILED`. A timeout, unavailable
+dependency tree, policy failure, or missing mapping makes it `UNVERIFIED`.
+The overall result is `FAILED` when any criterion fails. Otherwise it is
+`INCOMPLETE` when any criterion is unverified.
 
 Isolation, snapshot, source-freshness, and internal failures happen before a
 trustworthy command result exists. Those errors return no overall status and no
@@ -94,8 +111,9 @@ npm run check
 npm test
 ```
 
-The tests cover the public success path, URL and remote validation, criteria
-confirmation, clean fingerprints, command approval, nonzero and signal
-outcomes, timeouts, missing dependencies, policy rejection, unavailable
-isolation, output privacy, stable seals, and the real Bubblewrap path when the
-host provides the required Linux capabilities.
+The tests cover the public success path, URL and remote validation, ordered
+criteria and checked metadata, shared and unmapped command mappings, repeated
+plan approval after edits, nonzero and signal outcomes, independent progress,
+timeouts, missing dependencies, policy rejection, freshness changes, output
+privacy, stable seals, and the real Bubblewrap path when the host provides the
+required Linux capabilities.

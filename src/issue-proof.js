@@ -32,7 +32,9 @@ const POLICY_ERROR_CODES = new Set([
  * @typedef {{sourcePath: string, targetPath?: string, requiredPaths?: string[]}} DependencyTree
  * @typedef {{sourcePath: string, commitSha: string, trackedPatch: Uint8Array, manifest: ManifestEntry[], untrackedFiles: UntrackedFile[], dependencyTree?: DependencyTree, gitStatus: string}} ExecutorProofSubject
  * @typedef {{executable: string, args: string[], cwd: string, timeoutSeconds: number, environmentPolicy: {variables: Record<string, string>, inherit: string[]}}} ApprovedCommand
- * @typedef {{issueUrl: string, checkoutPath: string, command?: object, lockfilePath?: string}} IssueProofInput
+ * @typedef {{id: string, command: ApprovedCommand, criteria: string[]}} EvidenceCommand
+ * @typedef {{hash: string, approval: 'PENDING'|'APPROVED', commands: EvidenceCommand[]}} EvidencePlan
+ * @typedef {{issueUrl: string, checkoutPath: string, command?: object, commands?: object[], lockfilePath?: string}} IssueProofInput
  * @typedef {{now?: () => number, github?: object, decisions?: object, checkout?: object, boundaryOptions?: object, environment?: object|(() => object), redactionValues?: string[], gitBinary?: string}} IssueProofOptions
  */
 
@@ -87,17 +89,11 @@ export async function runIssueProof(input, options = {}) {
       ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath})
       : await inspectCleanCheckout(input.checkoutPath, input.lockfilePath, runtime);
     const fingerprint = normalizeInspection(inspection, input.checkoutPath);
-    const command = await selectCommand(input, input.checkoutPath, runtime.checkout);
-    const plan = createEvidencePlan(command, criteria);
-    await approvePlan(runtime.decisions, plan);
+    const commands = await selectCommands(input, input.checkoutPath, runtime.checkout, criteria);
+    const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria);
     const environment = normalizeEnvironment(await readExecutionEnvironment(runtime, fingerprint.lockfile));
-    const executionRequest = {
-      proofSubject: fingerprint.executorProofSubject,
-      approvedCommand: command,
-      command,
-      redactionValues: options.redactionValues || [],
-    };
-    const executionResult = await runtime.execution.execute(executionRequest);
+    const executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
+    await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
     const endedAt = runtime.now();
 
     return assembleProofResult({
@@ -107,7 +103,7 @@ export async function runIssueProof(input, options = {}) {
       fingerprint,
       plan,
       environment,
-      executionResult,
+      executionResults,
       startedAt,
       endedAt,
       privateValues: [input.checkoutPath],
@@ -184,8 +180,14 @@ function validateInput(input) {
   if (!path.isAbsolute(input.checkoutPath)) {
     throw new ProofError('REPOSITORY_MISMATCH', 'The local checkout path must be absolute.');
   }
+  if (input.command !== undefined && input.commands !== undefined) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'Provide either command or commands, not both.');
+  }
   if (input.command !== undefined && (!input.command || typeof input.command !== 'object')) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command is invalid.');
+  }
+  if (input.commands !== undefined && (!Array.isArray(input.commands) || input.commands.length === 0)) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'At least one verification command is required.');
   }
 }
 
@@ -290,22 +292,23 @@ function normalizeRemoteIdentity(value) {
 
 function extractCriteria(body) {
   const lines = body.split(/\r?\n/);
-  const sections = [];
+  const found = [];
+  const seenLines = new Set();
   for (let index = 0; index < lines.length; index += 1) {
     const heading = parseHeading(lines[index]);
     if (!heading || heading.text !== 'Acceptance criteria') continue;
-    const criteria = [];
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
       const nextHeading = parseHeading(lines[cursor]);
       if (nextHeading && nextHeading.level <= heading.level) break;
       const checkbox = parseCheckbox(lines[cursor]);
-      if (checkbox) criteria.push(checkbox);
+      if (checkbox && !seenLines.has(cursor)) {
+        found.push(checkbox);
+        seenLines.add(cursor);
+      }
     }
-    sections.push(criteria);
   }
-  const found = sections.flat();
-  if (found.length !== 1) {
-    throw new ProofError('EXPLICIT_CRITERIA_REQUIRED', 'The issue must contain exactly one checkbox beneath an Acceptance criteria heading.');
+  if (found.length === 0) {
+    throw new ProofError('EXPLICIT_CRITERIA_REQUIRED', 'The issue must contain at least one checkbox beneath an Acceptance criteria heading.');
   }
   return found.map((criterion, index) => ({
     id: `criterion-${index + 1}`,
@@ -338,29 +341,115 @@ function parseCheckbox(line) {
 
 async function confirmCriteria(decisions, criteria) {
   const handler = typeof decisions === 'function' ? decisions : decisions.confirmCriteria || decisions.confirmCriterion;
-  if (typeof handler !== 'function' || (await handler(criteria)) !== true) {
+  const presentedCriteria = criteria.map((criterion) => ({...criterion}));
+  if (typeof handler !== 'function' || (await handler(presentedCriteria)) !== true) {
     throw new ProofError('CRITERIA_NOT_CONFIRMED', 'The extracted acceptance criterion was not confirmed.');
   }
 }
 
-async function approvePlan(decisions, plan) {
+async function approvePlan(decisions, initialPlan, criteria) {
   const handler = typeof decisions === 'function' ? decisions : decisions.approvePlan;
-  if (typeof handler !== 'function' || (await handler(plan)) !== true) {
+  if (typeof handler !== 'function') {
+    throw new ProofError('PLAN_NOT_APPROVED', 'The complete verification command plan was not approved.');
+  }
+  let plan = initialPlan;
+  while (true) {
+    const presentedPlan = clonePlan(plan);
+    const response = await handler(presentedPlan);
+    const proposedPlan = extractPlanProposal(response, presentedPlan);
+    const commands = normalizePlanCommands(proposedPlan.commands, criteria);
+    const hash = hashJson({commands});
+    if (hash !== plan.hash) {
+      plan = {hash, approval: 'PENDING', commands};
+      continue;
+    }
+    if (response === true || response && typeof response === 'object' && response.approved === true) {
+      return {...plan, approval: 'APPROVED'};
+    }
     throw new ProofError('PLAN_NOT_APPROVED', 'The complete verification command plan was not approved.');
   }
 }
 
-async function selectCommand(input, checkoutPath, checkout) {
-  if (input.command) return normalizeCommand(input.command);
-  if (typeof checkout.discoverCommand === 'function') return normalizeCommand(await checkout.discoverCommand(checkoutPath));
+function extractPlanProposal(response, presentedPlan) {
+  if (response && typeof response === 'object' && response.plan && typeof response.plan === 'object') return response.plan;
+  if (response && typeof response === 'object' && Array.isArray(response.commands)) return response;
+  return presentedPlan;
+}
+
+function clonePlan(plan) {
+  return JSON.parse(JSON.stringify(plan));
+}
+
+async function selectCommands(input, checkoutPath, checkout, criteria) {
+  if (input.commands !== undefined) return normalizeCommandEntries(input.commands, criteria);
+  if (input.command) return normalizeCommandEntries([input.command], criteria);
+  if (typeof checkout.discoverCommands === 'function') return normalizeCommandEntries(await checkout.discoverCommands(checkoutPath), criteria);
+  if (typeof checkout.discoverCommand === 'function') return normalizeCommandEntries([await checkout.discoverCommand(checkoutPath)], criteria);
   const packageJson = await readPackageJson(checkoutPath);
   const scripts = packageJson.scripts && typeof packageJson.scripts === 'object' ? packageJson.scripts : {};
-  const script = ['check', 'test', 'verify'].find((name) => typeof scripts[name] === 'string');
-  if (!script) throw new ProofError('COMMAND_REQUIRED', 'A Node verification command is required.');
-  return normalizeCommand({executable: 'npm', args: ['run', script]});
+  const names = ['check', 'test', 'verify'].filter((name) => typeof scripts[name] === 'string');
+  if (names.length === 0) throw new ProofError('COMMAND_REQUIRED', 'A Node verification command is required.');
+  return normalizeCommandEntries(names.map((name) => ({executable: 'npm', args: ['run', name]})), criteria);
+}
+
+function normalizeCommandEntries(entries, criteria) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    throw new ProofError('COMMAND_NOT_APPROVED', 'At least one verification command is required.');
+  }
+  const normalized = [];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command is invalid.');
+    }
+    rejectUnsupportedCommandFields(entry);
+    const mapping = entry.criteria === undefined ? criteria.map(({id}) => id) : entry.criteria;
+    const command = normalizeCommand(entry);
+    normalized.push({
+      id: createCommandId(command),
+      command,
+      criteria: normalizeCriteriaMapping(mapping, criteria),
+    });
+  }
+  return normalized;
+}
+
+function normalizePlanCommands(entries, criteria) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    throw new ProofError('PLAN_NOT_APPROVED', 'The verification plan must contain at least one command.');
+  }
+  const normalized = [];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || !entry.command || typeof entry.command !== 'object') {
+      throw new ProofError('PLAN_NOT_APPROVED', 'The verification plan contains an invalid command.');
+    }
+    rejectUnsupportedCommandFields(entry, 'PLAN_NOT_APPROVED');
+    const command = normalizeCommand(entry.command);
+    normalized.push({
+      id: createCommandId(command),
+      command,
+      criteria: normalizeCriteriaMapping(entry.criteria, criteria),
+    });
+  }
+  return normalized;
+}
+
+function normalizeCriteriaMapping(mapping, criteria) {
+  if (!Array.isArray(mapping) || mapping.length === 0 || mapping.some((id) => typeof id !== 'string')) {
+    throw new ProofError('PLAN_NOT_APPROVED', 'Each command must have a criterion mapping.');
+  }
+  const known = new Set(criteria.map(({id}) => id));
+  const seen = new Set();
+  for (const id of mapping) {
+    if (!known.has(id) || seen.has(id)) {
+      throw new ProofError('PLAN_NOT_APPROVED', 'A command maps to an unknown or repeated criterion.');
+    }
+    seen.add(id);
+  }
+  return [...mapping];
 }
 
 function normalizeCommand(command) {
+  rejectUnsupportedCommandFields(command);
   if (!command || typeof command.executable !== 'string' || command.executable.length === 0 || command.executable.includes('\0') || command.executable.includes('\n')) {
     throw new ProofError('COMMAND_NOT_APPROVED', 'The verification command has no valid executable.');
   }
@@ -400,10 +489,69 @@ function normalizeCommand(command) {
   };
 }
 
-function createEvidencePlan(command, criteria) {
-  const commands = [{id: 'command-1', command, criteria: criteria.map(({id}) => id)}];
+function createCommandId(command) {
+  const identity = hashJson(commandIdentity(command));
+  return `command-${identity}`;
+}
+
+function commandIdentity(command) {
+  return {
+    executable: command.executable,
+    args: command.args,
+    cwd: command.cwd,
+    timeoutSeconds: command.timeoutSeconds,
+  };
+}
+
+function rejectUnsupportedCommandFields(command, code = 'COMMAND_NOT_APPROVED') {
+  if (['dependsOn', 'dependencies', 'prerequisites', 'evidence', 'outputEvidence', 'evidenceType', 'useOutputAsEvidence'].some((key) => Object.hasOwn(command || {}, key))) {
+    throw new ProofError(code, 'Command dependencies and output evidence are not supported.');
+  }
+}
+
+function createEvidencePlan(commands) {
   const hash = hashJson({commands});
   return {hash, approval: 'PENDING', commands};
+}
+
+async function executeCommands(runtime, plan, proofSubject, redactionValues) {
+  const results = [];
+  for (const entry of plan.commands) {
+    results.push(await runtime.execution.execute({
+      proofSubject,
+      approvedCommand: entry.command,
+      command: entry.command,
+      redactionValues,
+    }));
+  }
+  return results;
+}
+
+async function recheckFreshness(runtime, input, ticket, criteria, fingerprint) {
+  let issue;
+  try {
+    issue = await runtime.github.readIssue({
+      owner: ticket.owner,
+      repository: ticket.repository,
+      number: ticket.number,
+      authenticated: false,
+    });
+  } catch (error) {
+    if (error instanceof ProofError) throw error;
+    throw new ProofError('PUBLIC_ISSUE_UNAVAILABLE', 'The public GitHub issue could not be rechecked anonymously.');
+  }
+  const currentCriteria = extractCriteria(normalizeIssue(issue, ticket).body);
+  if (hashCriteria(currentCriteria) !== hashCriteria(criteria)) {
+    throw new ProofError('CRITERIA_CHANGED', 'The acceptance criteria changed during the proof run.');
+  }
+
+  const inspection = runtime.checkout.inspect
+    ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath})
+    : await inspectCleanCheckout(input.checkoutPath, input.lockfilePath, runtime);
+  const currentFingerprint = normalizeInspection(inspection, input.checkoutPath);
+  if (currentFingerprint.codeFingerprint.digest !== fingerprint.codeFingerprint.digest) {
+    throw new ProofError('SOURCE_CHANGED', 'The checkout fingerprint changed during the proof run.');
+  }
 }
 
 async function inspectCleanCheckout(checkoutPath, lockfilePath, runtime) {
@@ -587,45 +735,36 @@ async function commandVersion(executable, args) {
 }
 
 function assembleProofResult(context) {
-  const execution = classifyExecution(context.executionResult);
-  if (execution.kind === 'pre-result-error') {
-    return makeProofError(new ProofError(execution.code, execution.message, execution.details), context.ticket, {checkoutPath: context.privateValues[0]}, context.redactionValues);
+  const classifiedAttempts = context.plan.commands.map((planned, index) => ({
+    planned,
+    classification: classifyExecution(context.executionResults[index]),
+  }));
+  const runError = classifiedAttempts.find(({classification}) => classification.kind === 'pre-result-error');
+  if (runError) {
+    return makeProofError(new ProofError(runError.classification.code, runError.classification.message, runError.classification.details), context.ticket, {checkoutPath: context.privateValues[0]}, context.redactionValues);
   }
 
   const redactionValues = [
     ...context.redactionValues,
-    ...Object.values(context.plan.commands[0].command.environmentPolicy.variables).filter((value) => value.length >= 4),
+    ...context.plan.commands.flatMap(({command}) => Object.values(command.environmentPolicy.variables).filter((value) => value.length >= 4)),
   ];
-  const publicCommand = sanitizeValue(context.plan.commands[0].command, context.privateValues, redactionValues);
+  const publicCommands = context.plan.commands.map((planned) => ({
+    ...planned,
+    command: sanitizeValue(planned.command, context.privateValues, redactionValues),
+  }));
   const publicPlan = {
-    hash: hashJson({commands: [{...context.plan.commands[0], command: publicCommand}]}),
+    hash: hashJson({commands: publicCommands}),
     approval: 'APPROVED',
-    commands: [{...context.plan.commands[0], command: publicCommand}],
+    commands: publicCommands,
   };
-  const commandRecord = {
-    id: context.plan.commands[0].id,
-    command: publicCommand,
-    mapping: [...context.plan.commands[0].criteria],
-    ...(execution.outcome ? {execution: sanitizeValue(execution.outcome.execution, context.privateValues, redactionValues)} : {}),
-    ...(execution.outcome?.output ? {output: sanitizeValue(execution.outcome.output, context.privateValues, redactionValues)} : {}),
-    ...(execution.error ? {error: {code: execution.error.code, message: sanitizeText(execution.error.message, context.privateValues, redactionValues)}} : {}),
-  };
-  const criterionStatus = execution.status;
-  const criterion = context.criteria[0];
-  const criterionResult = {
-    id: criterion.id,
-    text: criterion.text,
-    checked: criterion.checked,
-    status: criterionStatus,
-    evidence: [{
-      type: 'automated',
-      commandId: commandRecord.id,
-      ...(execution.outcome ? {execution: commandRecord.execution, ...(commandRecord.output ? {output: commandRecord.output} : {})} : {error: commandRecord.error}),
-    }],
-    rationale: execution.rationale,
-  };
-  const warnings = collectWarnings(execution.outcome?.warnings || []);
-  const overallStatus = criterionStatus === 'PROVED' ? 'PROVED' : criterionStatus === 'FAILED' ? 'FAILED' : 'INCOMPLETE';
+  const attempts = classifiedAttempts.map((attempt, index) => ({
+    ...attempt,
+    record: createCommandRecord(publicCommands[index], attempt.classification, context, redactionValues),
+  }));
+  const commandRecords = attempts.map(({record}) => record);
+  const criterionResults = context.criteria.map((criterion) => createCriterionResult(criterion, attempts));
+  const warnings = collectWarnings(attempts.flatMap(({classification}) => classification.outcome?.warnings || []));
+  const overallStatus = aggregateOverallStatus(criterionResults);
   const codeFingerprint = sanitizeValue(context.fingerprint.codeFingerprint, context.privateValues, redactionValues);
   const stablePlanHash = publicPlan.hash;
   const publicEnvironment = sanitizeValue(context.environment, context.privateValues, redactionValues);
@@ -634,18 +773,18 @@ function assembleProofResult(context) {
     codeFingerprint,
     evidencePlanHash: stablePlanHash,
     executionEnvironment: publicEnvironment,
-    commandOutcomes: [{
-      commandId: commandRecord.id,
-      command: publicCommand,
-      ...(execution.outcome ? {
-        state: execution.outcome.execution.state,
-        exitCode: execution.outcome.execution.exitCode,
-        signal: execution.outcome.execution.signal,
-        timeoutSeconds: publicCommand.timeoutSeconds,
-        networkPolicy: execution.outcome.execution.networkPolicy || 'DENIED',
-      } : {policyCode: execution.error.code}),
-    }],
-    criterionStatuses: [{id: criterion.id, status: criterionStatus}],
+    commandOutcomes: attempts.map(({record, classification}) => ({
+      commandId: record.id,
+      command: record.command,
+      ...(classification.outcome ? {
+        state: classification.outcome.execution.state,
+        exitCode: classification.outcome.execution.exitCode,
+        signal: classification.outcome.execution.signal,
+        timeoutSeconds: record.command.timeoutSeconds,
+        networkPolicy: classification.outcome.execution.networkPolicy || 'DENIED',
+      } : {policyCode: classification.error.code}),
+    })),
+    criterionStatuses: criterionResults.map(({id, status}) => ({id, status})),
     overallStatus,
     warnings,
   };
@@ -672,10 +811,10 @@ function assembleProofResult(context) {
       endedAt: new Date(context.endedAt).toISOString(),
       durationMs: Math.max(0, context.endedAt - context.startedAt),
       runError: null,
-      commands: [commandRecord],
-      cleanup: execution.outcome?.cleanup || {state: 'NOT_REQUIRED'},
+      commands: commandRecords,
+      cleanup: summarizeCleanup(attempts.map(({classification}) => classification)),
     },
-    criterionResults: [criterionResult],
+    criterionResults,
     overallStatus,
     proofSeal,
     rerunInputs: {
@@ -691,6 +830,62 @@ function assembleProofResult(context) {
   const publicArtifact = sanitizeValue(artifact, context.privateValues, redactionValues);
   const proofCard = renderProofCard(publicArtifact);
   return {kind: 'proof-run', ...publicArtifact, proofCard, json: publicArtifact};
+}
+
+function createCommandRecord(planned, classification, context, redactionValues) {
+  return {
+    id: planned.id,
+    command: planned.command,
+    mapping: [...planned.criteria],
+    ...(classification.outcome ? {execution: sanitizeValue(classification.outcome.execution, context.privateValues, redactionValues)} : {}),
+    ...(classification.outcome?.output ? {output: sanitizeValue(classification.outcome.output, context.privateValues, redactionValues)} : {}),
+    ...(classification.error ? {error: {code: classification.error.code, message: sanitizeText(classification.error.message, context.privateValues, redactionValues)}} : {}),
+  };
+}
+
+function createCriterionResult(criterion, attempts) {
+  const mapped = attempts.filter(({planned}) => planned.criteria.includes(criterion.id));
+  const status = aggregateCriterionStatus(mapped.map(({classification}) => classification.status));
+  return {
+    id: criterion.id,
+    text: criterion.text,
+    checked: criterion.checked,
+    status,
+    evidence: mapped.map(({record}) => ({
+      type: 'automated',
+      commandId: record.id,
+      ...(record.execution ? {execution: record.execution, ...(record.output ? {output: record.output} : {})} : {error: record.error}),
+    })),
+    rationale: criterionRationale(status, mapped.length),
+  };
+}
+
+function aggregateCriterionStatus(statuses) {
+  if (statuses.some((status) => status === 'FAILED')) return 'FAILED';
+  if (statuses.length === 0 || statuses.some((status) => status === 'UNVERIFIED')) return 'UNVERIFIED';
+  return 'PROVED';
+}
+
+function criterionRationale(status, commandCount) {
+  if (commandCount === 0) return 'No approved command was mapped to this criterion.';
+  if (status === 'FAILED') return 'A mapped command completed with a nonzero exit or terminating signal.';
+  if (status === 'UNVERIFIED') return 'A mapped command had no trustworthy outcome.';
+  return 'Every mapped command exited zero in the isolated execution boundary.';
+}
+
+function aggregateOverallStatus(criterionResults) {
+  if (criterionResults.some(({status}) => status === 'FAILED')) return 'FAILED';
+  if (criterionResults.some(({status}) => status === 'UNVERIFIED')) return 'INCOMPLETE';
+  return 'PROVED';
+}
+
+function summarizeCleanup(classifications) {
+  const cleanups = classifications.map(({outcome}) => outcome?.cleanup).filter(Boolean);
+  if (cleanups.length === 0 || cleanups.every(({state}) => state === 'NOT_REQUIRED')) return {state: 'NOT_REQUIRED'};
+  const failed = cleanups.find(({state}) => state === 'FAILED');
+  if (failed) return failed;
+  if (cleanups.every(({state}) => state === 'CLEANED' || state === 'NOT_REQUIRED')) return {state: 'CLEANED'};
+  return cleanups[0];
 }
 
 function classifyExecution(result) {

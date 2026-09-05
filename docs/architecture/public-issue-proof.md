@@ -1,10 +1,10 @@
 # Public issue proof
 
-Issue #3 adds one public operation, `runIssueProof`, around the execution
-boundary from issue #2. The caller supplies a full GitHub issue URL and a local
-checkout, then supplies or accepts one existing Node verification command.
-Injected GitHub, decision, checkout, and environment adapters keep the complete
-path deterministic in tests. Boundary options can inject the existing
+Issue #4 extends the public `runIssueProof` operation from issue #3. The caller
+supplies a full GitHub issue URL, a local checkout, and one or more existing Node
+verification commands. Each command maps to one or more existing acceptance
+criteria. Injected GitHub, decision, checkout, and environment adapters keep the
+complete path deterministic in tests. Boundary options can inject the existing
 execution-boundary isolation adapter without allowing callers to replace the
 boundary itself.
 
@@ -14,7 +14,10 @@ boundary itself.
 const result = await runIssueProof({
   issueUrl: 'https://github.com/owner/repository/issues/42',
   checkoutPath: '/work/repository',
-  command: {executable: 'npm', args: ['test']},
+  commands: [
+    {executable: 'npm', args: ['run', 'check'], criteria: ['criterion-1']},
+    {executable: 'npm', args: ['test'], criteria: ['criterion-2']},
+  ],
 }, {
   github: {readIssue},
   decisions: {confirmCriteria, approvePlan},
@@ -29,10 +32,24 @@ seal.
 ## Shape
 
 The operation owns the lifecycle in this order: parse and anonymously read the
-public issue, normalize and match the checkout remote, extract one existing
-criterion, confirm it, fingerprint the clean checkout, build and approve one
-independent command plan, execute through the issue #2 boundary, classify the
-command outcome, and assemble the public artifacts.
+public issue, normalize and match the checkout remote, extract the existing
+criteria, confirm the complete list, fingerprint the clean checkout, build and
+approve an independent command plan, execute every command through the issue #2
+boundary, classify each outcome, aggregate each mapped criterion, and assemble
+the public artifacts.
+
+The plan contains ordered command entries with identity-derived IDs, normalized
+command identities, and criterion-ID mappings. A command mapping is explicit when the
+caller supplies `criteria`. Otherwise the operation maps the command to every
+criterion. Plan edits change the plan hash and return the plan to `PENDING`
+approval. The operation presents the revised full plan before it executes any
+command.
+
+The public operation invokes the lower-level boundary once per command. One
+failed, timed-out, or policy-blocked command does not prevent another approved
+command from running. A criterion fails when any mapped command fails. It stays
+unverified when no command is mapped or when a mapped command has no trustworthy
+outcome, unless another mapped command has already failed it.
 
 The domain is represented by a proof subject containing the criteria hash and a
 repository-only code fingerprint. The executor receives a separate private
@@ -50,10 +67,9 @@ untracked content.
 
 ## Synthesis decision
 
-The how walkthrough identified the existing execution boundary as the only
-trusted command-running capability. Competing designs were considered against
-that boundary, and the chosen deep-operation shape follows the grounded design
-directly.
+The existing execution boundary is the only trusted command-running capability.
+The ordered plan shape extends the existing plan without adding a second
+execution lifecycle.
 
 The lifecycle/session alternative would make transitions explicit, but it would
 expose temporal coordination and duplicate invariants already owned by the
@@ -69,6 +85,8 @@ issue #2 execution boundary; test seams replace only its isolation adapter.
   every GitHub write remain outside this version.
 - The clean-checkout restriction is deliberate. Dirty reconstruction belongs to
   issue #5 after the public seam exists.
+- The plan accepts only independent automated commands. Dependencies and output
+  selection remain outside version one.
 - Adapter seams are test-facing inputs, not extra production lifecycle methods.
 
 ## Alternatives considered
@@ -80,6 +98,11 @@ Separate parser, fingerprint, planner, renderer, and sealer exports would make
 each helper easy to call but would expose transport and private checkout shapes.
 The chosen operation keeps those representations private and gives the caller a
 single deep capability.
+
+A criterion-centric matrix would make aggregation direct, but it would duplicate
+command definitions for shared commands and force the caller to reconcile two
+ordered views. The command list remains the single plan source of truth, while
+criterion results derive from its mappings.
 
 ## Open questions and risks
 

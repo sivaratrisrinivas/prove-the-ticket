@@ -94,6 +94,288 @@ test('normalizes SSH remotes and preserves original unchecked criterion metadata
   }
 });
 
+test('runs independent commands and aggregates their mapped criterion outcomes', async () => {
+  const fixture = await createFixture();
+  const calls = {criteria: [], plans: [], execution: []};
+  const outcomes = [
+    processOutcome(),
+    {...processOutcome(), exitCode: 2},
+    processOutcome(),
+  ];
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1', 'criterion-2']},
+        {executable: process.execPath, args: ['-e', 'process.exit(2)'], criteria: ['criterion-2']},
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-3']},
+      ],
+    }, successfulOptions({
+      github: {readIssue: async () => ({title: 'Multiple criteria', body: '## Acceptance criteria\n- [x] First promise.\n  - [ ] Nested second promise.\n- [ ] Third promise.\n\n## Notes\n- [ ] Outside the section.\n'})},
+      decisions: {
+        async confirmCriteria(criteria) {
+          calls.criteria.push(criteria);
+          return true;
+        },
+        async approvePlan(plan) {
+          calls.plans.push(plan);
+          return true;
+        },
+      },
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        async execute(context) {
+          calls.execution.push(context);
+          return outcomes[calls.execution.length - 1];
+        },
+      }},
+    }));
+
+    assert.equal(calls.criteria[0].length, 3);
+    assert.deepEqual(calls.criteria[0].map(({text, nesting, checked}) => ({text, nesting, checked})), [
+      {text: 'First promise.', nesting: 0, checked: true},
+      {text: 'Nested second promise.', nesting: 2, checked: false},
+      {text: 'Third promise.', nesting: 0, checked: false},
+    ]);
+    assert.equal(calls.plans.length, 1);
+    assert.equal(calls.plans[0].approval, 'PENDING');
+    assert.deepEqual(calls.plans[0].commands.map(({criteria}) => criteria), [
+      ['criterion-1', 'criterion-2'],
+      ['criterion-2'],
+      ['criterion-3'],
+    ]);
+    const commandIds = calls.plans[0].commands.map(({id}) => id);
+    assert.equal(new Set(commandIds).size, 2);
+    assert.match(commandIds[0], /^command-[0-9a-f]{64}$/);
+    assert.equal(commandIds[0], commandIds[2]);
+    assert.equal(calls.execution.length, 3);
+    assert.deepEqual(result.criterionResults.map(({id, status}) => ({id, status})), [
+      {id: 'criterion-1', status: 'PROVED'},
+      {id: 'criterion-2', status: 'FAILED'},
+      {id: 'criterion-3', status: 'PROVED'},
+    ]);
+    assert.equal(result.proofRun.commands.length, 3);
+    assert.equal(result.overallStatus, 'FAILED');
+    assert.match(result.proofCard, /Criterion criterion-3: PROVED Third promise\./);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('requires full plan approval again when a presented plan is edited', async () => {
+  const fixture = await createFixture();
+  const plans = [];
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1']},
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-2']},
+      ],
+    }, successfulOptions({
+      github: {readIssue: async () => ({title: 'Editable plan', body: '## Acceptance criteria\n- [ ] First.\n- [ ] Second.\n'})},
+      decisions: {
+        confirmCriteria: async () => true,
+        async approvePlan(plan) {
+          plans.push(plan);
+          if (plans.length === 1) {
+            plan.commands[0].command.timeoutSeconds = 7;
+            plan.commands[1].criteria = ['criterion-1', 'criterion-2'];
+          }
+          return true;
+        },
+      },
+    }));
+
+    assert.equal(plans.length, 2);
+    assert.equal(plans[0].commands[0].command.timeoutSeconds, 7);
+    assert.deepEqual(plans[1].commands[1].criteria, ['criterion-1', 'criterion-2']);
+    assert.equal(result.evidencePlan.commands[0].command.timeoutSeconds, 7);
+    assert.deepEqual(result.evidencePlan.commands[1].criteria, ['criterion-1', 'criterion-2']);
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('marks an unmapped criterion unverified while running mapped commands', async () => {
+  const fixture = await createFixture();
+  let executions = 0;
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [{executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1']}],
+    }, successfulOptions({
+      github: {readIssue: async () => ({title: 'Unmapped criterion', body: '## Acceptance criteria\n- [ ] Mapped.\n- [ ] Unmapped.\n'})},
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        execute: async () => {
+          executions += 1;
+          return processOutcome();
+        },
+      }},
+    }));
+
+    assert.equal(executions, 1);
+    assert.equal(result.criterionResults[0].status, 'PROVED');
+    assert.equal(result.criterionResults[1].status, 'UNVERIFIED');
+    assert.deepEqual(result.criterionResults[1].evidence, []);
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('continues independent commands after a policy-blocked command', async () => {
+  const fixture = await createFixture();
+  const executions = [];
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [
+        {executable: 'npm', args: ['install'], criteria: ['criterion-1']},
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-2']},
+      ],
+    }, successfulOptions({
+      github: {readIssue: async () => ({title: 'Independent policy', body: '## Acceptance criteria\n- [ ] Policy command.\n- [ ] Local command.\n'})},
+      boundaryOptions: {isolation: {
+        check: async () => ({available: true}),
+        async execute(context) {
+          executions.push(context.command);
+          return processOutcome();
+        },
+      }},
+    }));
+
+    assert.equal(result.proofRun.commands.length, 2);
+    assert.equal(executions.length, 1);
+    assert.equal(result.criterionResults[0].status, 'UNVERIFIED');
+    assert.equal(result.criterionResults[1].status, 'PROVED');
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rejects command dependencies, output evidence, and unknown mappings', async () => {
+  const fixture = await createFixture();
+  try {
+    const dependency = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [{executable: process.execPath, args: ['-e', 'process.exit(0)'], dependsOn: [], criteria: ['criterion-1']}],
+    }, successfulOptions());
+    assert.equal(dependency.code, 'COMMAND_NOT_APPROVED');
+
+    const outputEvidence = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [{executable: process.execPath, args: ['-e', 'process.exit(0)'], evidence: 'stdout', criteria: ['criterion-1']}],
+    }, successfulOptions());
+    assert.equal(outputEvidence.code, 'COMMAND_NOT_APPROVED');
+
+    const unknownMapping = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [{executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-99']}],
+    }, successfulOptions());
+    assert.equal(unknownMapping.code, 'PLAN_NOT_APPROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rechecks the public criteria before sealing', async () => {
+  const fixture = await createFixture();
+  let issueReads = 0;
+  try {
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      github: {readIssue: async () => {
+        issueReads += 1;
+        return issueReads === 1 ? issue() : {...issue(), body: '## Acceptance criteria\n- [ ] Changed after approval.\n'};
+      }},
+    }));
+
+    assert.equal(issueReads, 2);
+    assert.equal(result.code, 'CRITERIA_CHANGED');
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('preserves command identities when command order changes', async () => {
+  const fixture = await createFixture();
+  const firstCommand = {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1']};
+  const secondCommand = {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-2']};
+  try {
+    const first = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [firstCommand, secondCommand],
+    }, successfulOptions({github: {readIssue: async () => ({title: 'Order', body: '## Acceptance criteria\n- [ ] First.\n- [ ] Second.\n'})}}));
+    const second = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [secondCommand, firstCommand],
+    }, successfulOptions({github: {readIssue: async () => ({title: 'Order', body: '## Acceptance criteria\n- [ ] First.\n- [ ] Second.\n'})}}));
+
+    assert.equal(first.evidencePlan.commands[0].id, second.evidencePlan.commands[1].id);
+    assert.equal(first.evidencePlan.commands[1].id, second.evidencePlan.commands[0].id);
+    assert.equal(first.evidencePlan.commands[0].id, first.evidencePlan.commands[1].id);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('changes the criteria hash when source order changes', async () => {
+  const fixture = await createFixture();
+  try {
+    const first = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({github: {
+      readIssue: async () => ({title: 'Order', body: '## Acceptance criteria\n- [ ] First.\n- [ ] Second.\n'}),
+    }}));
+    const second = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({github: {
+      readIssue: async () => ({title: 'Order', body: '## Acceptance criteria\n- [ ] Second.\n- [ ] First.\n'}),
+    }}));
+
+    assert.notEqual(first.proofSubject.criteriaHash, second.proofSubject.criteriaHash);
+    assert.notEqual(first.proofSeal, second.proofSeal);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('does not duplicate criteria under a nested acceptance heading', async () => {
+  const fixture = await createFixture();
+  let confirmedCriteria;
+  try {
+    const result = await runIssueProof({issueUrl: issueUrl(), checkoutPath: fixture.root}, successfulOptions({
+      github: {readIssue: async () => ({title: 'Nested headings', body: '## Acceptance criteria\n- [ ] Outer.\n### Acceptance criteria\n- [ ] Nested.\n\n## Notes\n- [ ] Outside.\n'})},
+      decisions: {
+        async confirmCriteria(criteria) {
+          confirmedCriteria = criteria;
+          return true;
+        },
+        approvePlan: async () => true,
+      },
+    }));
+
+    assert.deepEqual(confirmedCriteria.map(({id, text}) => ({id, text})), [
+      {id: 'criterion-1', text: 'Outer.'},
+      {id: 'criterion-2', text: 'Nested.'},
+    ]);
+    assert.equal(result.criterionResults.length, 2);
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('rejects invalid URLs, pull requests, unavailable issues, mismatched remotes, and missing criteria', async () => {
   const fixture = await createFixture();
   try {
