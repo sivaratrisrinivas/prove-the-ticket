@@ -56,5 +56,46 @@ const result = await runIssueProof({
   },
 });
 
-process.stdout.write(JSON.stringify(result));
+process.stdout.write(JSON.stringify(compactResult(result)));
 if (result.kind === 'run-error') process.exitCode = 1;
+
+function compactResult(value) {
+  if (value.kind !== 'proof-run') return value;
+
+  return {
+    kind: value.kind,
+    schemaVersion: value.schemaVersion,
+    ticket: value.ticket,
+    proofSubject: value.proofSubject,
+    evidencePlan: value.evidencePlan,
+    proofRun: {
+      executionEnvironment: value.proofRun.executionEnvironment,
+      startedAt: value.proofRun.startedAt,
+      endedAt: value.proofRun.endedAt,
+      durationMs: value.proofRun.durationMs,
+      runError: value.proofRun.runError,
+      commands: value.proofRun.commands.map(({id, command, mapping, execution, error}) => ({
+        id,
+        command,
+        mapping,
+        ...(execution ? {execution} : {}),
+        ...(error ? {error} : {}),
+      })),
+      cleanup: value.proofRun.cleanup,
+    },
+    criterionResults: value.criterionResults.map((criterion) => ({
+      ...criterion,
+      evidence: criterion.evidence.map(({type, commandId, execution, error}) => ({
+        type,
+        commandId,
+        ...(execution ? {execution} : {}),
+        ...(error ? {error} : {}),
+      })),
+    })),
+    overallStatus: value.overallStatus,
+    proofSeal: value.proofSeal,
+    rerunInputs: value.rerunInputs,
+    warnings: value.warnings,
+    proofCard: value.proofCard,
+  };
+}
