@@ -3,7 +3,7 @@
  * @rote-frontmatter
  * ---
  * name: prove-the-ticket
- * description: "Public Community Play for issue-bound verification. Supports ordinary-file Node checkouts on capability-validated Linux only; issue reads are anonymous and public-only; verification commands have no external network and cannot install dependencies; version 0.1 performs no GitHub write. This release does not claim criteria generation; does not claim criteria rewriting; does not claim command dependencies; does not claim output extraction; does not claim static evidence; does not claim manual evidence; does not claim comments; does not claim private repositories; does not claim non-Node repositories; does not claim cross-run reuse; does not claim macOS; does not claim Windows."
+ * description: Public Community Play for issue-bound verification. Supports ordinary-file Node checkouts on capability-validated Linux only; issue reads are anonymous and public-only; verification commands have no external network and cannot install dependencies; version 0.1 performs no GitHub write. This release does not claim criteria generation; does not claim criteria rewriting; does not claim command dependencies; does not claim output extraction; does not claim static evidence; does not claim manual evidence; does not claim comments; does not claim private repositories; does not claim non-Node repositories; does not claim cross-run reuse; does not claim macOS; does not claim Windows.
  * source: https://github.com/sivaratrisrinivas/prove-the-ticket
  * provenance:
  *   author: prove-ticket
@@ -27,7 +27,7 @@
  * metadata:
  *   rote_version: 0.79.0
  *   version: 0.1.0
- *   status: draft
+ *   status: released
  *   kind: atomic
  *   flow_type: sequential
  *   execution_model: steps_with_presentation
