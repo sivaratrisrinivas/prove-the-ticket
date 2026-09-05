@@ -53,7 +53,8 @@ Binary output is represented by its size and hash.
 ## Public Community Play
 
 Version 0.1 is published as the pinned Community Play
-[`prove-ticket/prove-the-ticket@0.1.0`](https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.0).
+[`prove-ticket/prove-the-ticket@0.1.1`](https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.1).
+Version 0.1.0 remains available as the original immutable release.
 It reads one public GitHub issue and checks the matching local Node checkout.
 It returns a proof card and a stable proof seal.
 
@@ -77,7 +78,7 @@ rote play run rote/prove-the-ticket/main.ts \
 Run the published package:
 
 ```sh
-rote play run https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.0 \
+rote play run https://play.modiqo.ai/prove-ticket/prove-the-ticket@0.1.1 \
   issue_url=https://github.com/sivaratrisrinivas/prove-the-ticket/issues/6 \
   checkout_path="$PWD" \
   confirm_criteria=yes \
@@ -99,10 +100,10 @@ The shareable result contains the privacy-safe proof only. It does not render
 the local checkout path, temporary snapshot paths, credentials, or untracked
 file contents.
 
-The 0.1 release commit is
-`35993ac8ce41eebc75d44f267d65f736f77ec694`. Its Community archive digest is
-`sha256:3ec584f218983b28d46280c799df99ff3d022b25b3f9c31308967f40d370d8d9`.
-The complete release record is in
+The plain-English 0.1.1 release commit is
+`4d4710fa5ea319a2e28e24fe3c58d00c47de5b8e`. Its Community archive digest is
+`sha256:207a74e7da9562f6b2fd03ce7e41c636bd8f2d453210402a418b7b358387ecdb`.
+The complete release history is in
 [issue #8](https://github.com/sivaratrisrinivas/prove-the-ticket/issues/8).
 
 ## Self-proof evidence
@@ -111,10 +112,10 @@ The original self-proof for issue #7 is retained in
 [`evidence/issue-7`](evidence/issue-7). It records the proof of all 20
 criteria from completed issue #6 at the earlier implementation commit.
 
-The 0.1 Community release was then verified from the release commit. The
-pinned Play read issue #6 anonymously and ran `npm run check` and `npm test`
-through the Linux isolation boundary. All 73 tests passed, all 20 issue
-criteria were `PROVED`, and the overall result was `PROVED`.
+The plain-English 0.1.1 Community release was verified from its release
+commit. The pinned Play read issue #6 anonymously and ran `npm run check` and
+`npm test` through the Linux isolation boundary. All 73 tests passed, all 20
+issue criteria were `PROVED`, and the overall result was `PROVED`.
 
 ## Verification
 
