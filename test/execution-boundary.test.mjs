@@ -341,6 +341,29 @@ test('returns timeout and signal outcomes distinctly', async () => {
   await remove(fixture.root);
 });
 
+test('reports temporary-workspace cleanup failures without hiding the command outcome', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await executeProofCommand(fixture.request, {
+      cleanup: async (rootPath) => {
+        await fs.rm(rootPath, {recursive: true, force: true});
+        throw new Error('cleanup failure');
+      },
+      isolation: adapter(async () => ({state: 'EXITED', exitCode: 0, signal: null})),
+    });
+
+    assert.equal(result.kind, 'command-outcome');
+    assert.equal(result.execution.exitCode, 0);
+    assert.deepEqual(result.cleanup, {
+      state: 'FAILED',
+      code: 'INTERNAL_EXECUTION_ERROR',
+      message: 'cleanup failure',
+    });
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('discards apparent command results when the source changes', async () => {
   const fixture = await createFixture();
   const result = await executeProofCommand(fixture.request, {

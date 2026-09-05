@@ -49,9 +49,12 @@ command.
 
 The public operation invokes the lower-level boundary once per command. One
 failed, timed-out, or policy-blocked command does not prevent another approved
-command from running. A criterion fails when any mapped command fails. It stays
+command from running. A pre-result safety error stops the plan before another
+command can run. A criterion fails when any mapped command fails. It stays
 unverified when no command is mapped or when a mapped command has no trustworthy
-outcome, unless another mapped command has already failed it.
+outcome, unless another mapped command has already failed it. A temporary
+workspace cleanup failure is retained in the result and qualifies an otherwise
+successful run as `INCOMPLETE`.
 
 The domain is represented by a proof subject containing the criteria hash and a
 repository-only code fingerprint. The executor receives a separate private

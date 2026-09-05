@@ -62,10 +62,14 @@ export async function runIssueProof(input, options = {}) {
   const startedAt = runtime.now();
   let ticket = null;
   let executionResults = [];
+  let checkoutPath = input?.checkoutPath;
 
   try {
     validateInput(input);
     ticket = parseIssueUrl(input.issueUrl);
+    checkoutPath = runtime.checkout.resolveRoot
+      ? await runtime.checkout.resolveRoot(input.checkoutPath)
+      : input.checkoutPath;
     let issue;
     try {
       issue = await runtime.github.readIssue({
@@ -81,7 +85,7 @@ export async function runIssueProof(input, options = {}) {
     const issueRecord = normalizeIssue(issue, ticket);
     let remoteRecords;
     try {
-      remoteRecords = await runtime.checkout.readRemotes(input.checkoutPath);
+      remoteRecords = await runtime.checkout.readRemotes(checkoutPath);
     } catch (error) {
       if (error instanceof ProofError) throw error;
       throw new ProofError('REPOSITORY_MISMATCH', 'The local checkout remotes could not be inspected.');
@@ -91,15 +95,15 @@ export async function runIssueProof(input, options = {}) {
     await confirmCriteria(runtime.decisions, criteria);
 
     const inspection = runtime.checkout.inspect
-      ? await runtime.checkout.inspect(input.checkoutPath, {lockfilePath: input.lockfilePath, decisions: runtime.decisions})
-      : await inspectCheckout(input.checkoutPath, input.lockfilePath, runtime, runtime.decisions);
-    const fingerprint = normalizeInspection(inspection, input.checkoutPath);
-    const commands = await selectCommands(input, input.checkoutPath, runtime.checkout, criteria);
-    const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria, input.checkoutPath);
+      ? await runtime.checkout.inspect(checkoutPath, {lockfilePath: input.lockfilePath, decisions: runtime.decisions})
+      : await inspectCheckout(checkoutPath, input.lockfilePath, runtime, runtime.decisions);
+    const fingerprint = normalizeInspection(inspection, checkoutPath);
+    const commands = await selectCommands(input, checkoutPath, runtime.checkout, criteria);
+    const plan = await approvePlan(runtime.decisions, createEvidencePlan(commands), criteria, checkoutPath);
     const environment = normalizeEnvironment(await readExecutionEnvironment(runtime, fingerprint.lockfile));
     executionResults = await executeCommands(runtime, plan, fingerprint.executorProofSubject, options.redactionValues || []);
     if (!executionResults.some((result) => classifyExecution(result).kind === 'pre-result-error')) {
-      await recheckFreshness(runtime, input, ticket, criteria, fingerprint);
+      await recheckFreshness(runtime, {...input, checkoutPath}, ticket, criteria, fingerprint);
     }
     const endedAt = runtime.now();
 
@@ -114,7 +118,7 @@ export async function runIssueProof(input, options = {}) {
       inspectionWarnings: fingerprint.warnings,
       startedAt,
       endedAt,
-      privateValues: [input.checkoutPath],
+      privateValues: [checkoutPath],
       redactionValues: options.redactionValues || [],
     });
   } catch (error) {
@@ -169,6 +173,26 @@ function createGithubAdapter() {
 function createCheckoutAdapter(gitBinary) {
   return {
     gitBinary,
+    async resolveRoot(checkoutPath) {
+      let output;
+      try {
+        output = await runFile(gitBinary, ['-C', checkoutPath, 'rev-parse', '--show-toplevel', '--is-bare-repository']);
+      } catch {
+        throw new ProofError('REPOSITORY_MISMATCH', 'The supplied path is not a readable non-bare Git checkout.');
+      }
+      const lines = output.stdout.toString('utf8').trim().split(/\r?\n/);
+      if (lines.length !== 2 || lines[1] !== 'false') {
+        throw new ProofError('REPOSITORY_MISMATCH', 'The supplied path is not a readable non-bare Git checkout.');
+      }
+      try {
+        const root = await fs.realpath(lines[0]);
+        const stat = await fs.stat(root);
+        if (!stat.isDirectory()) throw new Error('not a directory');
+        return root;
+      } catch {
+        throw new ProofError('REPOSITORY_MISMATCH', 'The local Git repository root is unavailable.');
+      }
+    },
     async readRemotes(checkoutPath) {
       let output;
       try {
@@ -538,12 +562,14 @@ function createEvidencePlan(commands) {
 async function executeCommands(runtime, plan, proofSubject, redactionValues) {
   const results = [];
   for (const entry of plan.commands) {
-    results.push(await runtime.execution.execute({
+    const result = await runtime.execution.execute({
       proofSubject,
       approvedCommand: entry.command,
       command: entry.command,
       redactionValues,
-    }));
+    });
+    results.push(result);
+    if (classifyExecution(result).kind === 'pre-result-error') break;
   }
   return results;
 }
@@ -728,22 +754,12 @@ function secretPathReason(entryPath) {
   const lowerPath = asciiLower(entryPath);
   const secretComponent = lowerPath.split('/').some((component) => component === '.env'
     || component.startsWith('.env.')
-    || component === '.envrc'
     || component === '.npmrc'
-    || component === '.yarnrc'
-    || component === '.yarnrc.yml'
     || component === 'id_rsa'
-    || component === 'id_dsa'
     || component === 'id_ed25519'
     || component === 'credentials'
-    || component.startsWith('credentials.')
-    || component === 'secret'
-    || component.startsWith('secret.')
-    || component.endsWith('.secret')
-    || component === 'token'
-    || component.startsWith('token.')
-    || component.endsWith('.token'));
-  return secretComponent || ['.pem', '.key', '.p8', '.p12', '.pfx', '.jks', '.keystore'].some((suffix) => lowerPath.endsWith(suffix)) ? 'SECRET_PATH' : null;
+    || component.startsWith('credentials.'));
+  return secretComponent || ['.pem', '.key', '.p12', '.pfx'].some((suffix) => lowerPath.endsWith(suffix)) ? 'SECRET_PATH' : null;
 }
 
 function asciiLower(value) {
@@ -870,20 +886,22 @@ async function readLockfile(checkoutPath, selectedPath, manifest) {
 }
 
 async function readDependencyTree(checkoutPath, packageJson) {
-  const dependencies = [
+  const dependencyNames = [
     packageJson.dependencies,
     packageJson.devDependencies,
     packageJson.optionalDependencies,
     packageJson.peerDependencies,
-  ].some((value) => value && typeof value === 'object' && Object.keys(value).length > 0);
+  ].flatMap((value) => value && typeof value === 'object' ? Object.keys(value) : []);
+  const requiredPaths = [...new Set(dependencyNames)].sort(compareStrings);
+  const dependencies = requiredPaths.length > 0;
   const dependencyPath = path.join(checkoutPath, 'node_modules');
   const stat = await fs.lstat(dependencyPath).catch(() => null);
   if (!dependencies && !stat) return null;
-  if (!stat) return {sourcePath: dependencyPath};
+  if (!stat) return {sourcePath: dependencyPath, requiredPaths};
   if (!stat?.isDirectory() || stat.isSymbolicLink()) {
     throw new ProofError('DEPENDENCIES_UNAVAILABLE', 'The existing dependency tree is unavailable.');
   }
-  return {sourcePath: dependencyPath, digest: await hashDependencyTree(dependencyPath)};
+  return {sourcePath: dependencyPath, requiredPaths, digest: await hashDependencyTree(dependencyPath)};
 }
 
 async function hashDependencyTree(root) {
@@ -954,9 +972,9 @@ async function commandVersion(executable, args) {
 }
 
 function assembleProofResult(context) {
-  const classifiedAttempts = context.plan.commands.map((planned, index) => ({
-    planned,
-    classification: classifyExecution(context.executionResults[index]),
+  const classifiedAttempts = context.executionResults.map((result, index) => ({
+    planned: context.plan.commands[index],
+    classification: classifyExecution(result),
   }));
   const redactionValues = [
     ...context.redactionValues,
@@ -984,11 +1002,13 @@ function assembleProofResult(context) {
   }));
   const commandRecords = attempts.map(({record}) => record);
   const criterionResults = context.criteria.map((criterion) => createCriterionResult(criterion, attempts));
+  const cleanup = summarizeCleanup(attempts.map(({classification}) => classification));
   const warnings = collectWarnings([
     ...(context.inspectionWarnings || []),
     ...attempts.flatMap(({classification}) => classification.outcome?.warnings || []),
+    ...(cleanup.state === 'FAILED' ? [{code: 'CLEANUP_FAILED'}] : []),
   ], context.privateValues, redactionValues);
-  const overallStatus = aggregateOverallStatus(criterionResults, context.fingerprint.codeFingerprint);
+  const overallStatus = aggregateOverallStatus(criterionResults, context.fingerprint.codeFingerprint, cleanup);
   const codeFingerprint = sanitizeValue(context.fingerprint.codeFingerprint, context.privateValues, redactionValues);
   const stablePlanHash = publicPlan.hash;
   const publicEnvironment = sanitizeValue(context.environment, context.privateValues, redactionValues);
@@ -1036,7 +1056,7 @@ function assembleProofResult(context) {
       durationMs: Math.max(0, context.endedAt - context.startedAt),
       runError: null,
       commands: commandRecords,
-      cleanup: summarizeCleanup(attempts.map(({classification}) => classification)),
+      cleanup,
     },
     criterionResults,
     overallStatus,
@@ -1097,14 +1117,16 @@ function criterionRationale(status, commandCount) {
   return 'Every mapped command exited zero in the isolated execution boundary.';
 }
 
-function aggregateOverallStatus(criterionResults, codeFingerprint = {completeness: 'COMPLETE'}) {
+function aggregateOverallStatus(criterionResults, codeFingerprint = {completeness: 'COMPLETE'}, cleanup = {state: 'NOT_REQUIRED'}) {
   if (criterionResults.some(({status}) => status === 'FAILED')) return 'FAILED';
-  if (codeFingerprint.completeness !== 'COMPLETE' || criterionResults.some(({status}) => status === 'UNVERIFIED')) return 'INCOMPLETE';
+  if (codeFingerprint.completeness !== 'COMPLETE'
+    || criterionResults.some(({status}) => status === 'UNVERIFIED')
+    || cleanup.state === 'FAILED') return 'INCOMPLETE';
   return 'PROVED';
 }
 
 function summarizeCleanup(classifications) {
-  const cleanups = classifications.map(({outcome}) => outcome?.cleanup).filter(Boolean);
+  const cleanups = classifications.map(({outcome, cleanup}) => outcome?.cleanup || cleanup).filter(Boolean);
   if (cleanups.length === 0 || cleanups.every(({state}) => state === 'NOT_REQUIRED')) return {state: 'NOT_REQUIRED'};
   const failed = cleanups.find(({state}) => state === 'FAILED');
   if (failed) return failed;
@@ -1121,7 +1143,12 @@ function classifyExecution(result) {
     return {kind: 'pre-result-error', code: 'INTERNAL_EXECUTION_ERROR', message: 'The execution boundary returned an invalid command outcome.'};
   }
   if (result.kind === 'run-error' && POLICY_ERROR_CODES.has(result.code)) {
-    return {status: 'UNVERIFIED', error: {code: result.code, message: result.message || result.code}, rationale: `The approved command had no trustworthy outcome because ${result.code}.`};
+    return {
+      status: 'UNVERIFIED',
+      error: {code: result.code, message: result.message || result.code},
+      cleanup: result.cleanup,
+      rationale: `The approved command had no trustworthy outcome because ${result.code}.`,
+    };
   }
   return {
     kind: 'pre-result-error',

@@ -31,7 +31,7 @@ The executor compares the reconstructed manifest with the subject before it call
 
 The executor drains both output streams into bounded buffers. It retains at most 32 KiB from each end of a 64 KiB stream and clips retained text only at UTF-8 boundaries. It masks credential values, including short explicit environment values, included untracked text, and private paths before it returns output. Binary output becomes a byte count and SHA-256 hash.
 
-After the command exits, the executor recomputes the commit, tracked patch, Git status, proof manifest, and dependency digest. The public inspector binds the dependency digest into the proof subject, so every command in a multi-command run is checked against the same dependency bytes. Any change returns `SOURCE_CHANGED` and discards the command result. A `finally`-equivalent cleanup step removes the temporary workspace for every path after workspace creation.
+After the command exits, the executor recomputes the commit, tracked patch, Git status, proof manifest, and dependency digest. The public inspector binds the dependency digest into the proof subject, so every command in a multi-command run is checked against the same dependency bytes. Any change returns `SOURCE_CHANGED` and discards the command result. A `finally`-equivalent cleanup step removes the temporary workspace for every path after workspace creation. Cleanup failures remain attached to the command result; the public proof composer emits `CLEANUP_FAILED` and qualifies an otherwise successful run as `INCOMPLETE`.
 
 ## Data shape
 

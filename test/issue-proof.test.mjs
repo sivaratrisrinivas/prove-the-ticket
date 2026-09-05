@@ -1008,6 +1008,156 @@ test('requires explicit approval when non-ignored untracked paths exist', async 
   }
 });
 
+test('resolves a nested checkout path to the repository root before proof planning', async () => {
+  const fixture = await createFixture();
+  await fs.mkdir(path.join(fixture.root, 'nested'));
+  let executionSourcePath;
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: path.join(fixture.root, 'nested'),
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async (context) => {
+            executionSourcePath = context.sourcePath;
+            return processOutcome();
+          },
+        },
+      },
+    }));
+
+    assert.equal(result.kind, 'proof-run');
+    assert.equal(executionSourcePath, fixture.root);
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('rejects a bare repository before treating it as a working checkout', async () => {
+  const source = await createFixture();
+  const bare = await fs.mkdtemp(path.join(os.tmpdir(), 'prove-ticket-bare-'));
+  try {
+    await execFileAsync('git', ['clone', '--bare', source.root, bare], {encoding: 'utf8'});
+    await execFileAsync('git', ['-C', bare, 'remote', 'set-url', 'origin', 'https://github.com/Owner/Repository.git'], {encoding: 'utf8'});
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: bare,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions());
+
+    assert.equal(result.code, 'REPOSITORY_MISMATCH');
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(source.root);
+    await remove(bare);
+  }
+});
+
+test('uses only the fixed 0.1 secret-path exclusions', async () => {
+  const fixture = await createFixture();
+  const allowedNearMatches = ['.envrc', '.yarnrc', 'id_dsa', 'secret.json', 'foo.token', 'certificate.p8'];
+  try {
+    for (const entryPath of allowedNearMatches) {
+      await fs.writeFile(path.join(fixture.root, entryPath), 'safe-near-match\n');
+    }
+
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      decisions: {
+        confirmCriteria: async () => true,
+        confirmUntracked: async () => true,
+        approvePlan: async () => true,
+      },
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => processOutcome(),
+        },
+      },
+    }));
+
+    assert.equal(result.proofSubject.codeFingerprint.completeness, 'COMPLETE');
+    assert.deepEqual(
+      result.proofSubject.codeFingerprint.untrackedFiles.map(({path: entryPath}) => entryPath),
+      allowedNearMatches.sort(),
+    );
+    assert.deepEqual(result.warnings, []);
+    assert.equal(result.overallStatus, 'PROVED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('stops before later commands after a pre-result run error', async () => {
+  const fixture = await createFixture();
+  let executions = 0;
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      commands: [
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1']},
+        {executable: process.execPath, args: ['-e', 'process.exit(0)'], criteria: ['criterion-1']},
+      ],
+    }, successfulOptions({
+      boundaryOptions: {
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => {
+            executions += 1;
+            throw new Error('execution adapter failed');
+          },
+        },
+      },
+    }));
+
+    assert.equal(executions, 1);
+    assert.equal(result.kind, 'run-error');
+    assert.equal(result.code, 'INTERNAL_EXECUTION_ERROR');
+    assert.equal(result.overallStatus, null);
+    assert.equal(result.proofSeal, null);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('qualifies a proof when temporary-workspace cleanup fails', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      boundaryOptions: {
+        cleanup: async () => {
+          throw new Error('cleanup failure');
+        },
+        isolation: {
+          check: async () => ({available: true}),
+          execute: async () => processOutcome(),
+        },
+      },
+    }));
+
+    assert.equal(result.kind, 'proof-run');
+    assert.equal(result.proofRun.cleanup.state, 'FAILED');
+    assert.equal(result.warnings.some(({code}) => code === 'CLEANUP_FAILED'), true);
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+    assert.match(result.proofSeal, /^sha256-v1:/);
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
 test('enforces the aggregate safe-untracked limit without reading excluded content', async () => {
   const fixture = await createFixture();
   try {
@@ -1139,6 +1289,53 @@ test('binds the existing dependency tree to the complete proof run', async () =>
     assert.equal(result.code, 'SOURCE_CHANGED');
     assert.equal(result.sourceIntegrity, 'CHANGED');
     assert.equal(result.cleanup.state, 'CLEANED');
+  } finally {
+    await remove(fixture.root);
+  }
+});
+
+test('preserves cleanup for a dependency policy error after fingerprinting', async () => {
+  const fixture = await createFixture({dependencies: true});
+  const dependencyPath = path.join(fixture.root, 'node_modules/missing-package/index.js');
+  let executions = 0;
+  let cleanups = 0;
+  try {
+    await fs.writeFile(path.join(fixture.root, '.gitignore'), 'node_modules/\n');
+    await git(fixture.root, ['add', '.gitignore']);
+    await git(fixture.root, ['commit', '-qm', 'ignore dependencies']);
+    await fs.mkdir(path.dirname(dependencyPath), {recursive: true});
+    await fs.writeFile(dependencyPath, 'module.exports = true;\n');
+    const result = await runIssueProof({
+      issueUrl: issueUrl(),
+      checkoutPath: fixture.root,
+      command: {executable: process.execPath, args: ['-e', 'process.exit(0)']},
+    }, successfulOptions({
+      boundaryOptions: {
+        cleanup: async (rootPath) => {
+          cleanups += 1;
+          await fs.rm(rootPath, {recursive: true, force: true});
+          throw new Error('cleanup failure');
+        },
+        isolation: {
+          check: async () => {
+            await fs.rm(path.dirname(dependencyPath), {recursive: true, force: true});
+            return {available: true};
+          },
+          execute: async () => {
+            executions += 1;
+            return processOutcome();
+          },
+        },
+      },
+    }));
+
+    assert.equal(result.kind, 'proof-run');
+    assert.equal(executions, 0);
+    assert.equal(cleanups, 1);
+    assert.equal(result.criterionResults[0].status, 'UNVERIFIED');
+    assert.equal(result.overallStatus, 'INCOMPLETE');
+    assert.equal(result.proofRun.cleanup.state, 'FAILED');
+    assert.equal(result.warnings.some(({code}) => code === 'CLEANUP_FAILED'), true);
   } finally {
     await remove(fixture.root);
   }

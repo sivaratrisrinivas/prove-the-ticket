@@ -31,7 +31,7 @@ const WARNING_ORDER = new Map([
  * @typedef {{proofSubject: ProofSubject, approvedCommand: ApprovedCommand, command?: ApprovedCommand, redactionValues?: string[]}} ExecutionRequest
  * @typedef {{state: 'EXITED'|'SIGNALED'|'TIMED_OUT', exitCode: number|null, signal: string|null, stdout?: Uint8Array|string, stderr?: Uint8Array|string, durationMs?: number}} ProcessOutcome
  * @typedef {{check: (context: {platform: string}) => Promise<{available: true}|{available: false, reason?: string}>, execute: (context: {snapshotPath: string, scratchPath: string, dependencyTree: DependencyTree|null, command: ApprovedCommand, internalCwd: string, environment: Record<string, string>, sourcePath: string}) => Promise<ProcessOutcome>}} IsolationAdapter
- * @typedef {{isolation?: IsolationAdapter, platform?: string, now?: () => number, tempRoot?: string, bwrapBinary?: string, gitBinary?: string, tarBinary?: string}} ExecutionOptions
+ * @typedef {{isolation?: IsolationAdapter, platform?: string, now?: () => number, tempRoot?: string, bwrapBinary?: string, gitBinary?: string, tarBinary?: string, cleanup?: (rootPath: string) => Promise<void>}} ExecutionOptions
  */
 
 class BoundaryError extends Error {
@@ -165,7 +165,7 @@ export async function executeProofCommand(request, options = {}) {
 
   if (workspace) {
     try {
-      await fs.rm(workspace.rootPath, {recursive: true, force: true});
+      await runtime.cleanup(workspace.rootPath);
       outcome.cleanup = {state: 'CLEANED'};
     } catch (error) {
       outcome.cleanup = {
@@ -189,6 +189,7 @@ function createRuntime(options) {
     gitBinary: options.gitBinary || 'git',
     tarBinary: options.tarBinary || 'tar',
     isolation: options.isolation,
+    cleanup: options.cleanup || ((rootPath) => fs.rm(rootPath, {recursive: true, force: true})),
   };
   runtime.isolation ||= createBubblewrapIsolation(runtime);
   return runtime;
