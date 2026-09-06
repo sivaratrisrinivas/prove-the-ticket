@@ -102,8 +102,12 @@ the repository under inspection. The shareable result contains the privacy-safe
 proof only. It does not render the local checkout path, temporary snapshot
 paths, credentials, or untracked file contents.
 
-The 0.1.2 release identity is recorded after publication. Earlier release
-history remains in
+The 0.1.2 release commit is
+`b5a9fb50e3a3373a25a87dffeecf7187859112bd`. Its Community archive digest is
+`sha256:fa8c20055700b816e764a6ab246e31360a4b20b0bdb620b11fe12d77395e962c`.
+The installed package digest is
+`installed-package-sha256-v1:29126573861f1d4cc4994d216587c1f55a1f9768e39b5cb9ecd952a757073f91`.
+Earlier release history remains in
 [issue #8](https://github.com/sivaratrisrinivas/prove-the-ticket/issues/8).
 
 ## Self-proof evidence
@@ -112,10 +116,16 @@ The original self-proof for issue #7 is retained in
 [`evidence/issue-7`](evidence/issue-7). It records the proof of all 20
 criteria from completed issue #6 at the earlier implementation commit.
 
-The 0.1.1 Community release was verified from its release commit against this
-repository. The 0.1.2 release packages the verifier inside the Play so the same
-pinned URI can prove an unrelated public Node repository that has matching
-checkbox criteria and root `check`, `test`, or `verify` scripts.
+The 0.1.2 Community release packages the verifier inside the Play. The pinned
+URI was inspected publicly and then run against the unrelated public repository
+[`stateless-engineering/stateless-engineering#18`](https://github.com/stateless-engineering/stateless-engineering/issues/18).
+That checkout has no `src/index.js`. The Play discovered `npm run test`, ran it
+through the Linux isolation boundary, proved the issue criterion, and returned
+`PROVED` with proof seal
+`sha256-v1:a409dcf03894221b35e645d0fb346bcf599c115de56aca2336b4cbc17941acaf`.
+The shareable result used `<local-checkout>` and contained no credentials,
+exact local paths, temporary paths, or untracked-file contents. Local checks
+for the release commit passed: `npm run check` and `npm test` (77/77).
 
 ## Verification
 
