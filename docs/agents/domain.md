@@ -19,7 +19,7 @@ This repository uses a single-context layout:
 ├── docs/adr/
 │   ├── 0001-event-sourced-orders.md
 │   └── 0002-postgres-for-write-model.md
-└── src/
+└── rote/prove-the-ticket/resources/verifier/
 ```
 
 ## Use the glossary's vocabulary

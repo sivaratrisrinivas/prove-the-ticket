@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {canonicalizeJson, hashCanonicalJson} from '../src/canonical-json.js';
+import {canonicalizeJson, hashCanonicalJson} from '../rote/prove-the-ticket/resources/verifier/canonical-json.js';
 
 test('serializes RFC 8785 number and literal examples', () => {
   assert.equal(canonicalizeJson(333333333.33333329), '333333333.3333333');

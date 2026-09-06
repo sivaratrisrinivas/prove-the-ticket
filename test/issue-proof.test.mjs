@@ -7,9 +7,9 @@ import path from 'node:path';
 import {promisify} from 'node:util';
 import test from 'node:test';
 
-import {createIssueProofPlay, runIssueProof} from '../src/index.js';
-import {hashCanonicalJson} from '../src/canonical-json.js';
-import {classifyExecution} from '../src/issue-proof.js';
+import {createIssueProofPlay, runIssueProof} from '../rote/prove-the-ticket/resources/verifier/index.js';
+import {hashCanonicalJson} from '../rote/prove-the-ticket/resources/verifier/canonical-json.js';
+import {classifyExecution} from '../rote/prove-the-ticket/resources/verifier/issue-proof.js';
 
 const execFileAsync = promisify(execFile);
 

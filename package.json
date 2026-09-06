@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./rote/prove-the-ticket/resources/verifier/index.js"
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/canonical-json.js && node --check src/command-policy.js && node --check src/execution-boundary.js && node --check src/issue-proof.js && node --check rote/prove-the-ticket/resources/run-proof.mjs && node --check rote/prove-the-ticket/resources/verifier/index.js && node --check rote/prove-the-ticket/resources/verifier/canonical-json.js && node --check rote/prove-the-ticket/resources/verifier/command-policy.js && node --check rote/prove-the-ticket/resources/verifier/execution-boundary.js && node --check rote/prove-the-ticket/resources/verifier/issue-proof.js && node --check test/canonical-json.test.mjs && node --check test/execution-boundary.test.mjs && node --check test/issue-proof.test.mjs && node --check test/release-package.test.mjs",
+    "check": "for f in rote/prove-the-ticket/resources/run-proof.mjs rote/prove-the-ticket/resources/verifier/*.js test/*.test.mjs; do node --check \"$f\" || exit 1; done",
     "test": "node --test"
   }
 }

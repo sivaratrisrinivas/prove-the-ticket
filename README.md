@@ -119,7 +119,7 @@ criteria from completed issue #6 at the earlier implementation commit.
 The 0.1.2 Community release packages the verifier inside the Play. The pinned
 URI was inspected publicly and then run against the unrelated public repository
 [`stateless-engineering/stateless-engineering#18`](https://github.com/stateless-engineering/stateless-engineering/issues/18).
-That checkout has no `src/index.js`. The Play discovered `npm run test`, ran it
+That checkout has none of this project's code. The Play discovered `npm run test`, ran it
 through the Linux isolation boundary, proved the issue criterion, and returned
 `PROVED` with proof seal
 `sha256-v1:a409dcf03894221b35e645d0fb346bcf599c115de56aca2336b4cbc17941acaf`.

@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import {executeProofCommand} from '../src/index.js';
+import {executeProofCommand} from '../rote/prove-the-ticket/resources/verifier/index.js';
 
 const execFileAsync = promisify(execFile);
 
