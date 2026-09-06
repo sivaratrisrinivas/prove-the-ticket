@@ -11,20 +11,16 @@ test('declares the public 0.1 Rote contract and required confirmations', async (
   const play = await fs.readFile(playPath, 'utf8');
 
   for (const phrase of [
-    'ordinary-file Node checkouts on Linux after the required isolation checks pass',
-    'reads public issues anonymously',
-    'Verification commands have no network access',
-    'cannot install dependencies',
-    'Version 0.1 never writes to GitHub',
-    'does not generate or rewrite criteria',
-    'manage command dependencies',
-    'extract output',
-    'collect static or manual evidence',
-    'post comments',
-    'use private or non-Node repositories',
-    'reuse results across runs',
-    'support macOS',
-    'support macOS or Windows',
+    'Green tests don’t prove you checked the right GitHub issue against the right code',
+    'Point this at a public issue URL and your local Node project',
+    'It shows the checks, you approve, then it runs them in a sandbox with no internet',
+    'prints a short result card',
+    'Linux + Node only for now',
+    'It never writes to GitHub',
+    'Public GitHub issue link',
+    'Absolute path to your local Node project',
+    'Type yes after you review the criteria',
+    'Type yes after you review the command plan',
   ]) {
     assert.match(play, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), phrase);
   }
@@ -33,7 +29,7 @@ test('declares the public 0.1 Rote contract and required confirmations', async (
     assert.match(play, new RegExp(`name: ${parameter}`));
   }
   assert.match(play, /@resource\{run-proof\.mjs\}/);
-  assert.match(play, /version: 0\.1\.2/);
+  assert.match(play, /version: 0\.1\.3/);
 });
 
 test('runs the packaged runner against a Node checkout that has no prove-the-ticket sources', async () => {
